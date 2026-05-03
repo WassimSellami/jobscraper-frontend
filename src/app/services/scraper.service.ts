@@ -2,12 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Job, ScraperRequest } from '../models/job.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
     providedIn: 'root'
 })
 export class ScraperService {
-    private readonly API_BASE_URL = 'http://localhost:8000';
+    private readonly API_BASE_URL = environment.apiBaseUrl;
     private readonly SCRAPE_ENDPOINT = '/api/scrape/linkedin';
 
     private jobsSubject = new BehaviorSubject<Job[]>([]);

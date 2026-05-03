@@ -1,0 +1,6 @@
+services:
+  - type: static
+    name: jobscraper-dashboard
+    env: static
+    buildCommand: "npm run build:prod"
+    publishPath: "dist/jobscraper-dashboard"
