@@ -1,0 +1,18 @@
+<div class="app">
+    <app-header></app-header>
+
+    <app-filters-bar [isLoading]="isLoading" [jobs]="jobs" (scrape)="onScrape($event)"></app-filters-bar>
+
+    <main class="main-content">
+        <div *ngIf="error" class="error-message">
+            <span class="error-icon">⚠️</span>
+            <span class="error-text">{{ error }}</span>
+        </div>
+
+        <div *ngIf="!jobs || jobs.length === 0" class="no-jobs">
+            <p>No jobs to display yet. Click "Scrape" to run the scraper.</p>
+        </div>
+
+        <app-jobs-table *ngIf="jobs && jobs.length > 0" [jobs]="jobs" [isLoading]="isLoading"></app-jobs-table>
+    </main>
+</div>

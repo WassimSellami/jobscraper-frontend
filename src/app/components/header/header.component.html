@@ -1,0 +1,9 @@
+<header class="app-header">
+    <div class="header-content">
+        <h1>LinkedIn Job Scraper Dashboard</h1>
+        <button class="theme-toggle" (click)="toggleDarkMode()"
+            [attr.aria-label]="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'">
+            <span class="icon">{{ isDarkMode ? '☀️' : '🌙' }}</span>
+        </button>
+    </div>
+</header>

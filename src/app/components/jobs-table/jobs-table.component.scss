@@ -1,0 +1,424 @@
+.jobs-table-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    min-height: 0;
+}
+
+.jobs-table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
+    padding: 0 0.25rem;
+}
+
+.eyebrow {
+    margin: 0 0 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.jobs-table-header h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.results-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.55rem 0.9rem;
+    border-radius: 999px;
+    background: var(--surface-strong);
+    border: 1px solid var(--surface-border);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.jobs-table-container {
+    position: relative;
+    width: 100%;
+    overflow: visible;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.82));
+    border: 1px solid var(--surface-border);
+    border-radius: 20px;
+    box-shadow: var(--surface-shadow);
+    backdrop-filter: blur(10px);
+    padding: 0.85rem;
+}
+
+html[data-theme='dark'] .jobs-table-container {
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.82));
+}
+
+.jobs-table-container.is-loading {
+    opacity: 0.92;
+}
+
+.jobs-loading,
+.jobs-empty {
+    display: grid;
+    place-items: center;
+    min-height: 220px;
+    padding: 2rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+.jobs-loading {
+    position: absolute;
+    inset: 0.85rem;
+    z-index: 2;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(4px);
+}
+
+html[data-theme='dark'] .jobs-loading {
+    background: rgba(15, 23, 42, 0.78);
+}
+
+.jobs-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 0.65rem;
+    table-layout: auto;
+    font-size: 0.92rem;
+    color: var(--text-primary);
+    // ✅ cancel the top border-spacing gap that showed under sticky header
+    margin-top: -0.65rem;
+}
+
+.jobs-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10; // ✅ raised from 1 to properly sit above rows
+    // ✅ opaque backgrounds to prevent bleed-through on scroll
+    background: #ffffff;
+    color: var(--text-secondary);
+    text-align: left;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    padding: 0.8rem 1rem;
+    // ✅ use box-shadow instead of border-bottom to avoid gap artifact
+    box-shadow: 0 1px 0 var(--surface-border);
+    border-bottom: none;
+}
+
+html[data-theme='dark'] .jobs-table thead th {
+    background: #0f172a; // ✅ match dark container background
+}
+
+.jobs-table thead th:nth-child(3),
+.jobs-table thead th:nth-child(4) {
+    text-align: center;
+    padding: 0.8rem 0.6rem;
+}
+
+.jobs-table thead th:first-child {
+    border-top-left-radius: 14px;
+}
+
+.jobs-table thead th:last-child {
+    border-top-right-radius: 14px;
+}
+
+.jobs-table tbody tr {
+    background: var(--surface-elevated);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.jobs-table tbody tr:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--surface-shadow-hover);
+}
+
+.jobs-table tbody td {
+    padding: 1rem;
+    vertical-align: top;
+    word-break: break-word;
+    background: inherit;
+    border-top: 1px solid var(--surface-border);
+    border-bottom: 1px solid var(--surface-border);
+}
+
+.jobs-table tbody td:nth-child(3),
+.jobs-table tbody td:nth-child(4) {
+    padding: 0.95rem 0.6rem;
+    text-align: center;
+}
+
+.jobs-table tbody td:first-child {
+    border-left: 1px solid var(--surface-border);
+    border-top-left-radius: 16px;
+    border-bottom-left-radius: 16px;
+}
+
+.jobs-table tbody td:last-child {
+    border-right: 1px solid var(--surface-border);
+    border-top-right-radius: 16px;
+    border-bottom-right-radius: 16px;
+}
+
+.jobs-table tbody tr:nth-child(even) td {
+    background: rgba(248, 250, 252, 0.85);
+}
+
+html[data-theme='dark'] .jobs-table tbody tr:nth-child(even) td {
+    background: rgba(15, 23, 42, 0.85);
+}
+
+// ✅ title-cell now on inner div — flex works reliably here
+.title-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.job-link,
+.job-title-text {
+    font-size: 0.99rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--primary-color);
+    word-break: break-word;
+    overflow-wrap: break-word;
+    // ✅ removed display: block — no longer needed since parent div is flex
+}
+
+.job-link {
+    text-decoration: none;
+}
+
+.job-link:hover {
+    text-decoration: underline;
+}
+
+.cell-hint {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.cell-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.cell-value {
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.level-badge,
+.date-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    font-size: 0.77rem;
+    font-weight: 700;
+    line-height: 1;
+    border: 1px solid var(--surface-border);
+    background: var(--surface-muted);
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.jobs-table td:nth-child(1) {
+    width: 52%;
+}
+
+.jobs-table td:nth-child(2) {
+    width: 30%;
+}
+
+.jobs-table td:nth-child(3) {
+    width: 10%;
+    min-width: 100px;
+}
+
+.jobs-table td:nth-child(4) {
+    width: 8%;
+    min-width: 85px;
+}
+
+@media (max-width: 1024px) {
+    .jobs-table-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .jobs-table-container {
+        padding: 0.75rem;
+        overflow-x: auto;
+        overflow-y: visible;
+    }
+
+    .jobs-table {
+        min-width: 880px;
+        font-size: 0.85rem;
+    }
+
+    .jobs-table tbody td,
+    .jobs-table thead th {
+        padding: 0.7rem 0.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .jobs-table-header h2 {
+        font-size: 1.15rem;
+    }
+
+    .jobs-table-header {
+        gap: 0.75rem;
+    }
+
+    .jobs-table-container {
+        border-radius: 16px;
+        padding: 0.5rem;
+        overflow-x: auto;
+        overflow-y: visible;
+    }
+
+    .jobs-table {
+        min-width: 650px;
+        font-size: 0.8rem;
+        border-spacing: 0 0.5rem;
+        margin-top: -0.5rem;
+    }
+
+    .jobs-table tbody td,
+    .jobs-table thead th {
+        padding: 0.6rem 0.5rem;
+    }
+
+    .jobs-table thead th {
+        font-size: 0.65rem;
+    }
+
+    .level-badge,
+    .date-pill {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.5rem;
+    }
+
+    .cell-hint {
+        font-size: 0.7rem;
+    }
+
+    .job-link,
+    .job-title-text {
+        font-size: 0.85rem;
+    }
+
+    .jobs-table td:nth-child(1) {
+        width: 50%;
+    }
+
+    .jobs-table td:nth-child(2) {
+        width: 28%;
+    }
+
+    .jobs-table td:nth-child(3) {
+        width: 12%;
+        min-width: 70px;
+    }
+
+    .jobs-table td:nth-child(4) {
+        width: 10%;
+        min-width: 70px;
+    }
+}
+
+@media (max-width: 480px) {
+    .results-pill {
+        font-size: 0.75rem;
+        padding: 0.4rem 0.6rem;
+    }
+
+    .jobs-table-header h2 {
+        font-size: 1rem;
+    }
+
+    .jobs-table-shell {
+        gap: 0.5rem;
+    }
+
+    .jobs-table-container {
+        padding: 0.4rem;
+        overflow-x: auto;
+        overflow-y: visible;
+    }
+
+    .jobs-table {
+        min-width: 500px;
+        font-size: 0.75rem;
+        border-spacing: 0 0.4rem;
+        margin-top: -0.4rem;
+    }
+
+    .jobs-table tbody td,
+    .jobs-table thead th {
+        padding: 0.5rem 0.4rem;
+    }
+
+    .jobs-table thead th {
+        font-size: 0.6rem;
+        font-weight: 600;
+    }
+
+    .jobs-table tbody td:nth-child(3),
+    .jobs-table tbody td:nth-child(4) {
+        padding: 0.5rem 0.3rem;
+        text-align: center;
+    }
+
+    .level-badge,
+    .date-pill {
+        font-size: 0.65rem;
+        padding: 0.25rem 0.4rem;
+    }
+
+    .cell-hint {
+        font-size: 0.65rem;
+    }
+
+    .job-link,
+    .job-title-text {
+        font-size: 0.8rem;
+        line-height: 1.3;
+    }
+
+    .jobs-table td:nth-child(1) {
+        width: 48%;
+    }
+
+    .jobs-table td:nth-child(2) {
+        width: 30%;
+    }
+
+    .jobs-table td:nth-child(3) {
+        width: 12%;
+        min-width: 60px;
+    }
+
+    .jobs-table td:nth-child(4) {
+        width: 10%;
+        min-width: 60px;
+    }
+}

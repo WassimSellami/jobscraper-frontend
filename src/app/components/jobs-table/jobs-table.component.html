@@ -1,0 +1,60 @@
+<section class="jobs-table-shell">
+    <div class="jobs-table-header">
+        <div>
+            <p class="eyebrow">Latest results</p>
+            <h2>Job matches</h2>
+        </div>
+        <div class="results-pill">
+            {{ jobs.length }} results
+        </div>
+    </div>
+
+    <div class="jobs-table-container" [class.is-loading]="isLoading">
+        <div class="jobs-loading" *ngIf="isLoading">
+            Refreshing the latest jobs...
+        </div>
+
+        <div class="jobs-empty" *ngIf="!jobs || jobs.length === 0">
+            No jobs to display yet. Run a scrape to populate the table.
+        </div>
+
+        <table class="jobs-table" *ngIf="jobs && jobs.length > 0">
+            <thead>
+                <tr>
+                    <th>Job Title</th>
+                    <th>Company</th>
+                    <th>Level</th>
+                    <th>Posted</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let job of jobs">
+                    <td>
+                        <!-- ✅ flex moved to inner div, not on <td> directly -->
+                        <div class="title-cell">
+                            <a *ngIf="job.job_url; else plainTitle" [href]="job.job_url" target="_blank"
+                                rel="noopener noreferrer" class="job-link">
+                                {{ job.title }}
+                            </a>
+                            <ng-template #plainTitle>
+                                <span class="job-title-text">{{ job.title }}</span>
+                            </ng-template>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="cell-stack">
+                            <span class="cell-value">{{ job.company }}</span>
+                            <span class="cell-hint">{{ job.company_industry || 'N/A' }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="level-badge">{{ job.job_level }}</span>
+                    </td>
+                    <td>
+                        <span class="date-pill">{{ formatDatePosted(job.date_posted) }}</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
