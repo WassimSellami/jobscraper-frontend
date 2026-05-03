@@ -1,81 +1,75 @@
 <div class="filters-bar">
     <form [formGroup]="form" class="filters-container">
+
         <!-- Search Terms Row -->
         <div class="filters-row-search">
-            <!-- Search Terms Chips -->
             <div class="filter-group">
                 <label>Search Terms</label>
                 <div class="chips-wrapper">
                     <div class="chips">
-                        <span *ngFor="let term of searchTerms; let i = index" class="chip">
+                        <button *ngFor="let term of searchTerms; let i = index" type="button"
+                            class="chip chip-selectable" [class.chip-selected]="isSearchTermSelected(term)"
+                            (click)="toggleSearchTerm(term)">
                             <span class="chip-text">{{ term }}</span>
-                            <button type="button" class="chip-remove" (click)="removeSearchTerm(i)">✕</button>
-                        </span>
+                            <span class="chip-remove" (click)="removeSearchTerm(i); $event.stopPropagation()">✕</span>
+                        </button>
+
                         <ng-container *ngIf="!showSearchTermsAddInput">
                             <button type="button" class="chip-add" (click)="onSearchTermAddClick()">+</button>
                         </ng-container>
+
                         <ng-container *ngIf="showSearchTermsAddInput">
                             <input [(ngModel)]="searchTermsInput" [ngModelOptions]="{standalone: true}"
-                                (keydown)="onSearchTermKeydown($event)" type="text" placeholder="Add term"
+                                (keydown)="onSearchTermKeydown($event)" type="text" placeholder="Add term, press Enter"
                                 class="chip-input chip-input-inline search-term-add-input"
                                 (blur)="cancelSearchTermAdd()" />
                         </ng-container>
                     </div>
                 </div>
+                <!-- Error message -->
+                <span class="error-message" *ngIf="showSearchTermsError">
+                    ⚠ Please select at least one search term.
+                </span>
             </div>
         </div>
 
         <!-- Job Level Row -->
         <div class="filters-row-job-level">
-            <!-- Job Level Chips -->
             <div class="filter-group">
                 <label>Job Level</label>
                 <div class="chips-wrapper">
                     <div class="chips">
-                        <span *ngFor="let level of jobLevels; let i = index" class="chip">
+                        <!-- Now purely toggle chips, no add/remove -->
+                        <button *ngFor="let level of ALLOWED_JOB_LEVELS" type="button" class="chip chip-selectable"
+                            [class.chip-selected]="isJobLevelSelected(level)" (click)="toggleJobLevel(level)">
                             <span class="chip-text">{{ level }}</span>
-                            <button type="button" class="chip-remove" (click)="removeJobLevel(i)">✕</button>
-                        </span>
-                        <ng-container *ngIf="!showJobLevelAddInput">
-                            <button type="button" class="chip-add" [disabled]="getAvailableJobLevels().length === 0"
-                                (click)="onJobLevelAddClick()">+</button>
-                        </ng-container>
-                        <ng-container *ngIf="showJobLevelAddInput">
-                            <select [(ngModel)]="jobLevelInput" [ngModelOptions]="{standalone: true}"
-                                class="chip-input chip-input-select job-level-add-input"
-                                (change)="addJobLevel(jobLevelInput)" (blur)="cancelJobLevelAdd()">
-                                <option value="" disabled selected>Select level</option>
-                                <option *ngFor="let level of getAvailableJobLevels()" [value]="level">
-                                    {{ level }}
-                                </option>
-                            </select>
-                        </ng-container>
+                        </button>
                     </div>
                 </div>
+                <!-- Error message -->
+                <span class="error-message" *ngIf="showJobLevelsError">
+                    ⚠ Please select at least one job level.
+                </span>
             </div>
         </div>
 
         <!-- Bottom Row: Location and Other Filters -->
         <div class="filters-row-bottom">
-            <!-- Location -->
             <div class="filter-group">
                 <label for="location">Location</label>
                 <input id="location" formControlName="LOCATION" type="text" class="text-input" />
             </div>
 
-            <!-- Distance -->
             <div class="filter-group">
                 <label for="distance">Distance (miles)</label>
                 <input id="distance" formControlName="DISTANCE_MILES" type="number" class="number-input" />
             </div>
 
-            <!-- Hours Old -->
             <div class="filter-group">
                 <label for="hours">Hours Old</label>
                 <input id="hours" formControlName="HOURS_OLD" type="number" class="number-input" />
             </div>
 
-            <!-- Results Wanted -->
             <div class="filter-group">
                 <label for="results">Results per search term</label>
                 <input id="results" formControlName="RESULTS_WANTED" type="number" class="number-input" />
@@ -93,5 +87,6 @@
                 Export CSV
             </button>
         </div>
+
     </form>
 </div>

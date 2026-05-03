@@ -17,10 +17,10 @@ export class FiltersBarComponent implements OnInit {
 
     readonly ALLOWED_JOB_LEVELS = ['entry level', 'mid-senior level'];
 
+    // ─── Search Terms ──────────────────────────────────────────────────────────
     searchTermsInput = '';
-    jobLevelInput = '';
     showSearchTermsAddInput = false;
-    showJobLevelAddInput = false;
+    showSearchTermsError = false;
     searchTerms: string[] = [
         'software engineer',
         'software developer',
@@ -32,31 +32,34 @@ export class FiltersBarComponent implements OnInit {
         'backend developer',
         'frontend developer'
     ];
-    jobLevels: string[] = ['entry level', 'mid-senior level'];
+
+    // ─── Job Levels ────────────────────────────────────────────────────────────
+    // Job levels are now fixed (same as ALLOWED_JOB_LEVELS) — no add/remove
+    showJobLevelsError = false;
+
+    // ─── Selections ───────────────────────────────────────────────────────────
+    selectedSearchTerms: Set<string> = new Set();
+    selectedJobLevels: Set<string> = new Set();
+
+    form: FormGroup;
 
     private readonly DEFAULT_VALUES = {
-        SEARCH_TERMS: this.searchTerms,
-        LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: this.jobLevels,
         LOCATION: 'Munich, Germany',
         DISTANCE_MILES: 31,
         HOURS_OLD: 24,
         RESULTS_WANTED: 10
     };
 
-    form: FormGroup;
-
     constructor(private fb: FormBuilder) {
         this.form = this.createForm();
     }
 
-    ngOnInit(): void {
-        // Form already initialized in constructor
-    }
+    ngOnInit(): void { }
 
     private createForm(): FormGroup {
         return this.fb.group({
-            SEARCH_TERMS: [this.searchTerms],
-            LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: [this.jobLevels],
+            SEARCH_TERMS: [[]],
+            LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: [[]],
             LOCATION: [this.DEFAULT_VALUES.LOCATION],
             DISTANCE_MILES: [this.DEFAULT_VALUES.DISTANCE_MILES],
             HOURS_OLD: [this.DEFAULT_VALUES.HOURS_OLD],
@@ -64,46 +67,101 @@ export class FiltersBarComponent implements OnInit {
         });
     }
 
-    private initializeForm(): void {
-        this.form = this.createForm();
-    }
+    // ─── Search Terms ──────────────────────────────────────────────────────────
 
     addSearchTerm(): void {
         const term = this.searchTermsInput.trim();
         if (term) {
             if (!this.searchTerms.includes(term)) {
                 this.searchTerms = [...this.searchTerms, term];
-                this.form.patchValue({ SEARCH_TERMS: this.searchTerms });
             }
             this.searchTermsInput = '';
+            this.showSearchTermsAddInput = false;
         }
     }
 
     removeSearchTerm(index: number): void {
+        const term = this.searchTerms[index];
         this.searchTerms = this.searchTerms.filter((_: string, i: number) => i !== index);
-        this.form.patchValue({ SEARCH_TERMS: this.searchTerms });
+        this.selectedSearchTerms.delete(term);
+        this.form.patchValue({ SEARCH_TERMS: Array.from(this.selectedSearchTerms) });
+        if (this.selectedSearchTerms.size === 0) this.showSearchTermsError = true;
     }
 
-    addJobLevel(level: string): void {
-        if (level && !this.jobLevels.includes(level)) {
-            this.jobLevels = [...this.jobLevels, level];
-            this.form.patchValue({ LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: this.jobLevels });
-            this.showJobLevelAddInput = false;
-            this.jobLevelInput = '';
+    toggleSearchTerm(term: string): void {
+        if (this.selectedSearchTerms.has(term)) {
+            this.selectedSearchTerms.delete(term);
+        } else {
+            this.selectedSearchTerms.add(term);
+        }
+        this.form.patchValue({ SEARCH_TERMS: Array.from(this.selectedSearchTerms) });
+        this.showSearchTermsError = this.selectedSearchTerms.size === 0;
+    }
+
+    isSearchTermSelected(term: string): boolean {
+        return this.selectedSearchTerms.has(term);
+    }
+
+    onSearchTermKeydown(event: KeyboardEvent): void {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            this.addSearchTerm();
+        } else if (event.key === 'Escape') {
+            this.cancelSearchTermAdd();
         }
     }
 
-    getAvailableJobLevels(): string[] {
-        return this.ALLOWED_JOB_LEVELS.filter(level => !this.jobLevels.includes(level));
+    onSearchTermAddClick(): void {
+        this.showSearchTermsAddInput = true;
+        setTimeout(() => {
+            const input = document.querySelector('.search-term-add-input') as HTMLInputElement;
+            if (input) input.focus();
+        });
     }
 
-    removeJobLevel(index: number): void {
-        this.jobLevels = this.jobLevels.filter((_: string, i: number) => i !== index);
-        this.form.patchValue({ LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: this.jobLevels });
+    cancelSearchTermAdd(): void {
+        this.showSearchTermsAddInput = false;
+        this.searchTermsInput = '';
     }
+
+    // ─── Job Levels (toggle-only, no add/remove) ───────────────────────────────
+
+    toggleJobLevel(level: string): void {
+        if (this.selectedJobLevels.has(level)) {
+            this.selectedJobLevels.delete(level);
+        } else {
+            this.selectedJobLevels.add(level);
+        }
+        this.form.patchValue({ LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: Array.from(this.selectedJobLevels) });
+        this.showJobLevelsError = this.selectedJobLevels.size === 0;
+    }
+
+    isJobLevelSelected(level: string): boolean {
+        return this.selectedJobLevels.has(level);
+    }
+
+    // ─── Validation ────────────────────────────────────────────────────────────
+
+    isSearchTermsValid(): boolean {
+        return this.selectedSearchTerms.size > 0;
+    }
+
+    isJobLevelsValid(): boolean {
+        return this.selectedJobLevels.size > 0;
+    }
+
+    isFormValid(): boolean {
+        return this.form.valid && this.isSearchTermsValid() && this.isJobLevelsValid();
+    }
+
+    // ─── Actions ───────────────────────────────────────────────────────────────
 
     onScrape(): void {
-        if (this.form.valid && !this.isLoading) {
+        // Trigger error messages on attempted scrape with invalid state
+        this.showSearchTermsError = !this.isSearchTermsValid();
+        this.showJobLevelsError = !this.isJobLevelsValid();
+
+        if (!this.isLoading && this.isFormValid()) {
             this.scrape.emit(this.form.getRawValue());
         }
     }
@@ -136,38 +194,5 @@ export class FiltersBarComponent implements OnInit {
         link.setAttribute('download', `linkedin-jobs-${new Date().toISOString().slice(0, 10)}.csv`);
         link.click();
         URL.revokeObjectURL(url);
-    }
-
-    onSearchTermKeydown(event: KeyboardEvent): void {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            this.addSearchTerm();
-        }
-    }
-
-    onSearchTermAddClick(): void {
-        this.showSearchTermsAddInput = true;
-        setTimeout(() => {
-            const input = document.querySelector('.search-term-add-input') as HTMLInputElement;
-            if (input) input.focus();
-        });
-    }
-
-    onJobLevelAddClick(): void {
-        this.showJobLevelAddInput = true;
-        setTimeout(() => {
-            const input = document.querySelector('.job-level-add-input') as HTMLInputElement;
-            if (input) input.focus();
-        });
-    }
-
-    cancelSearchTermAdd(): void {
-        this.showSearchTermsAddInput = false;
-        this.searchTermsInput = '';
-    }
-
-    cancelJobLevelAdd(): void {
-        this.showJobLevelAddInput = false;
-        this.jobLevelInput = '';
     }
 }
