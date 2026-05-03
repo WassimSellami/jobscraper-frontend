@@ -1,8 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-// Reads RENDER_API_BASE_URL or API_BASE_URL from environment and writes src/environments/environment.prod.ts
-const apiUrl = process.env.RENDER_API_BASE_URL || process.env.API_BASE_URL || 'https://api.example.com';
+const apiUrl = process.env.API_BASE_URL || 'https://api.example.com';
 
 const content = `export const environment = {
   production: true,
