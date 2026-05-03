@@ -47,7 +47,8 @@ export class FiltersBarComponent implements OnInit {
         LOCATION: 'Munich, Germany',
         DISTANCE_MILES: 31,
         HOURS_OLD: 24,
-        RESULTS_WANTED: 10
+        RESULTS_WANTED: 10,
+        ALLOW_DEUTSCH: false
     };
 
     constructor(private fb: FormBuilder) {
@@ -63,7 +64,8 @@ export class FiltersBarComponent implements OnInit {
             LOCATION: [this.DEFAULT_VALUES.LOCATION],
             DISTANCE_MILES: [this.DEFAULT_VALUES.DISTANCE_MILES],
             HOURS_OLD: [this.DEFAULT_VALUES.HOURS_OLD],
-            RESULTS_WANTED: [this.DEFAULT_VALUES.RESULTS_WANTED]
+            RESULTS_WANTED: [this.DEFAULT_VALUES.RESULTS_WANTED],
+            ALLOW_DEUTSCH: [this.DEFAULT_VALUES.ALLOW_DEUTSCH]
         });
     }
 
@@ -138,6 +140,17 @@ export class FiltersBarComponent implements OnInit {
 
     isJobLevelSelected(level: string): boolean {
         return this.selectedJobLevels.has(level);
+    }
+
+    // ─── ALLOW_DEUTSCH Toggle ──────────────────────────────────────────────────
+
+    toggleAllowDeutsch(): void {
+        const currentValue = this.form.get('ALLOW_DEUTSCH')?.value || false;
+        this.form.patchValue({ ALLOW_DEUTSCH: !currentValue });
+    }
+
+    isAllowDeutschEnabled(): boolean {
+        return this.form.get('ALLOW_DEUTSCH')?.value || false;
     }
 
     // ─── Validation ────────────────────────────────────────────────────────────

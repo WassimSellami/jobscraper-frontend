@@ -16,4 +16,5 @@ export interface ScraperRequest {
     DISTANCE_MILES: number;
     HOURS_OLD: number;
     RESULTS_WANTED: number;
+    ALLOW_DEUTSCH: boolean;
 }

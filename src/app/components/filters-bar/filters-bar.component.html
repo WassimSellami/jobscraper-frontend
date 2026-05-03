@@ -74,6 +74,14 @@
                 <label for="results">Results per search term</label>
                 <input id="results" formControlName="RESULTS_WANTED" type="number" class="number-input" />
             </div>
+
+            <div class="filter-group deutsch-group">
+                <label>Allow Deutsch</label>
+                <button type="button" class="toggle-deutsch" [class.toggle-enabled]="isAllowDeutschEnabled()"
+                    [class.toggle-disabled]="!isAllowDeutschEnabled()" (click)="toggleAllowDeutsch()">
+                    <span class="toggle-circle"></span>
+                </button>
+            </div>
         </div>
 
         <!-- Action Buttons -->
