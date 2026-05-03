@@ -8,7 +8,7 @@
                 <div class="chips-wrapper">
                     <div class="chips">
                         <span *ngFor="let term of searchTerms; let i = index" class="chip">
-                            {{ term }}
+                            <span class="chip-text">{{ term }}</span>
                             <button type="button" class="chip-remove" (click)="removeSearchTerm(i)">✕</button>
                         </span>
                         <ng-container *ngIf="!showSearchTermsAddInput">
@@ -33,7 +33,7 @@
                 <div class="chips-wrapper">
                     <div class="chips">
                         <span *ngFor="let level of jobLevels; let i = index" class="chip">
-                            {{ level }}
+                            <span class="chip-text">{{ level }}</span>
                             <button type="button" class="chip-remove" (click)="removeJobLevel(i)">✕</button>
                         </span>
                         <ng-container *ngIf="!showJobLevelAddInput">

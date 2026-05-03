@@ -84,13 +84,24 @@
 
 .filters-row-search .chip,
 .filters-row-job-level .chip {
-    width: 180px;
-    height: 28px;
+    width: 220px;
+    height: 36px;
     padding: 0.4rem 0.75rem;
     justify-content: center;
     text-align: center;
     overflow: hidden;
     text-overflow: ellipsis;
+    position: relative;
+    padding-right: .2rem;
+    /* reserve space for the remove button */
+}
+
+.chip-text {
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: calc(100% - 1.6rem);
 }
 
 .chip-remove {
@@ -100,8 +111,12 @@
     cursor: pointer;
     font-size: 0.875rem;
     padding: 0;
-    margin-left: 0.25rem;
+    margin-left: 0;
     transition: opacity 0.2s;
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
 
     &:hover {
         opacity: 0.7;
