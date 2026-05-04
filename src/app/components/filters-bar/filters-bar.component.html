@@ -149,7 +149,34 @@
         <div class="filters-row-bottom">
             <div class="filter-group">
                 <label for="location">Location</label>
-                <input id="location" formControlName="LOCATION" type="text" class="text-input" />
+                <div class="location-autocomplete">
+                    <input id="location" formControlName="LOCATION" type="text" class="text-input"
+                        placeholder="Search a city in Germany" autocomplete="off" (focus)="onLocationFocus()"
+                        (blur)="onLocationBlur()" (keydown)="onLocationKeydown($event)" />
+
+                    <div class="location-suggestions" *ngIf="locationSuggestionsVisible">
+                        <button type="button" class="location-suggestion"
+                            *ngFor="let suggestion of locationSuggestions; let i = index"
+                            [class.highlighted]="i === highlightedLocationIndex"
+                            (mouseenter)="highlightedLocationIndex = i"
+                            (mousedown)="selectLocationSuggestion(suggestion); $event.preventDefault()">
+                            <span class="location-suggestion-city">{{ suggestion.city }}</span>
+                            <span class="location-suggestion-country">Germany</span>
+                        </button>
+
+                        <div class="location-suggestion location-suggestion-status" *ngIf="locationSearchLoading">
+                            Searching German cities...
+                        </div>
+
+                        <div class="location-suggestion location-suggestion-status"
+                            *ngIf="!locationSearchLoading && locationSuggestions.length === 0 && (form.get('LOCATION')?.value?.trim()?.length ?? 0) >= 3">
+                            No German cities found.
+                        </div>
+                        <div class="error-message" *ngIf="showLocationError">
+                            ⚠ Please select a city from the list.
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="filter-group">

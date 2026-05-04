@@ -1,7 +1,9 @@
-import { Component, EventEmitter, Output, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Output, Input, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Subject, debounceTime, distinctUntilChanged, map, of, switchMap, takeUntil, tap } from 'rxjs';
 import { ScraperRequest } from '../../models/job.model';
+import { GermanCityAutocompleteService, GermanCitySuggestion } from '../../services/german-city-autocomplete.service';
 
 @Component({
     selector: 'app-filters-bar',
@@ -10,7 +12,7 @@ import { ScraperRequest } from '../../models/job.model';
     templateUrl: './filters-bar.component.html',
     styleUrls: ['./filters-bar.component.scss']
 })
-export class FiltersBarComponent implements OnInit {
+export class FiltersBarComponent implements OnInit, OnDestroy {
     @Output() scrape = new EventEmitter<ScraperRequest>();
     @Input() isLoading = false;
     @Input() jobs: any[] = [];
@@ -84,6 +86,16 @@ export class FiltersBarComponent implements OnInit {
     selectedJobLevels: Set<string> = new Set(); selectedCompanyExclusions: Set<string> = new Set();
     selectedPositionExclusions: Set<string> = new Set();
     form: FormGroup;
+    locationSuggestions: GermanCitySuggestion[] = [];
+    locationSuggestionsVisible = false;
+    locationSearchLoading = false;
+    highlightedLocationIndex = -1;
+    selectedLocationLabel: string | null = null;
+    showLocationError = false;
+    private justSelectedLocation = false;
+
+    private readonly destroy$ = new Subject<void>();
+    private readonly germanCityAutocompleteService = inject(GermanCityAutocompleteService);
 
     private readonly DEFAULT_VALUES = {
         LOCATION: 'Munich, Germany',
@@ -95,6 +107,7 @@ export class FiltersBarComponent implements OnInit {
 
     constructor(private fb: FormBuilder) {
         this.form = this.createForm();
+        this.selectedLocationLabel = this.DEFAULT_VALUES.LOCATION;
     }
 
     ngOnInit(): void {
@@ -105,13 +118,51 @@ export class FiltersBarComponent implements OnInit {
             COMPANY_EXCLUSION_TERMS: Array.from(this.selectedCompanyExclusions),
             POSITION_EXCLUSION_TERMS: Array.from(this.selectedPositionExclusions)
         });
+
+        this.form.get('LOCATION')?.valueChanges.pipe(
+            map((value: unknown) => String(value ?? '').trim()),
+            debounceTime(250),
+            distinctUntilChanged(),
+            tap((query: string) => {
+                // clear selected flag when user types (unless we just programmatically set it)
+                if (this.justSelectedLocation) {
+                    this.justSelectedLocation = false;
+                } else {
+                    this.selectedLocationLabel = null;
+                }
+
+                if (query.length < 3) {
+                    this.locationSuggestions = [];
+                    this.locationSuggestionsVisible = false;
+                    this.locationSearchLoading = false;
+                    return;
+                }
+
+                this.locationSearchLoading = true;
+            }),
+            switchMap((query: string) => query.length >= 3
+                ? this.germanCityAutocompleteService.search(query)
+                : of([])
+            ),
+            takeUntil(this.destroy$)
+        ).subscribe((suggestions: GermanCitySuggestion[]) => {
+            this.locationSuggestions = suggestions;
+            this.locationSearchLoading = false;
+            this.locationSuggestionsVisible = suggestions.length > 0;
+            this.highlightedLocationIndex = suggestions.length > 0 ? 0 : -1;
+        });
+    }
+
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
     }
 
     private createForm(): FormGroup {
         return this.fb.group({
             SEARCH_TERMS: [[]],
             LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: [[]],
-            LOCATION: [this.DEFAULT_VALUES.LOCATION],
+            LOCATION: [this.DEFAULT_VALUES.LOCATION, Validators.required],
             DISTANCE_MILES: [this.DEFAULT_VALUES.DISTANCE_MILES],
             HOURS_OLD: [this.DEFAULT_VALUES.HOURS_OLD],
             RESULTS_WANTED: [this.DEFAULT_VALUES.RESULTS_WANTED],
@@ -350,6 +401,58 @@ export class FiltersBarComponent implements OnInit {
         this.positionExclusionInput = '';
     }
 
+    // ─── Location Autocomplete ────────────────────────────────────────────────
+
+    onLocationFocus(): void {
+        this.locationSuggestionsVisible = this.locationSuggestions.length > 0;
+    }
+
+    onLocationBlur(): void {
+        setTimeout(() => {
+            // If the user didn't pick from the list, clear the field and mark as required
+            const current = String(this.form.get('LOCATION')?.value ?? '').trim();
+            if (!this.selectedLocationLabel || this.selectedLocationLabel !== current) {
+                this.form.patchValue({ LOCATION: '' });
+                this.form.get('LOCATION')?.setErrors({ required: true });
+                this.showLocationError = true;
+            }
+            this.locationSuggestionsVisible = false;
+        }, 150);
+    }
+
+    onLocationKeydown(event: KeyboardEvent): void {
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            if (this.locationSuggestions.length > 0) {
+                this.highlightedLocationIndex = (this.highlightedLocationIndex + 1) % this.locationSuggestions.length;
+            }
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            if (this.locationSuggestions.length > 0) {
+                this.highlightedLocationIndex = (this.highlightedLocationIndex - 1 + this.locationSuggestions.length) % this.locationSuggestions.length;
+            }
+        } else if (event.key === 'Enter') {
+            if (this.locationSuggestions.length > 0 && this.highlightedLocationIndex >= 0) {
+                event.preventDefault();
+                const suggestion = this.locationSuggestions[this.highlightedLocationIndex];
+                if (suggestion) this.selectLocationSuggestion(suggestion);
+            }
+        } else if (event.key === 'Escape') {
+            this.locationSuggestionsVisible = false;
+        }
+    }
+
+    selectLocationSuggestion(suggestion: GermanCitySuggestion): void {
+        this.justSelectedLocation = true;
+        this.selectedLocationLabel = suggestion.label;
+        this.form.patchValue({ LOCATION: suggestion.label });
+        this.locationSuggestions = [];
+        this.locationSuggestionsVisible = false;
+        this.locationSearchLoading = false;
+        this.highlightedLocationIndex = -1;
+        this.showLocationError = false;
+    }
+
     // ─── ALLOW_DEUTSCH Toggle ──────────────────────────────────────────────────
 
     toggleAllowDeutsch(): void {
@@ -381,6 +484,12 @@ export class FiltersBarComponent implements OnInit {
         // Trigger error messages on attempted scrape with invalid state
         this.showSearchTermsError = !this.isSearchTermsValid();
         this.showJobLevelsError = !this.isJobLevelsValid();
+        // Ensure location must be selected from suggestions
+        if (!this.selectedLocationLabel) {
+            this.showLocationError = true;
+            // mark control invalid
+            this.form.get('LOCATION')?.setErrors({ required: true });
+        }
 
         if (!this.isLoading && this.isFormValid()) {
             this.scrape.emit(this.form.getRawValue());
