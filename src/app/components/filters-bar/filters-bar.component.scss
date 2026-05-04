@@ -520,6 +520,7 @@
 }
 
 .location-suggestion.highlighted {
-    background-color: var(--primary-hover, #eef2ff);
+    background-color: #f8fbff;
+    border: 1px solid #dbeafe;
     transform: translateY(-1px);
 }

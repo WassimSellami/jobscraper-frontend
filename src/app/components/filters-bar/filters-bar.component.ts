@@ -93,6 +93,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     selectedLocationLabel: string | null = null;
     showLocationError = false;
     private justSelectedLocation = false;
+    private suppressNextLocationSearch = false;
 
     private readonly destroy$ = new Subject<void>();
     private readonly germanCityAutocompleteService = inject(GermanCityAutocompleteService);
@@ -124,12 +125,21 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
             debounceTime(250),
             distinctUntilChanged(),
             tap((query: string) => {
-                // clear selected flag when user types (unless we just programmatically set it)
-                if (this.justSelectedLocation) {
-                    this.justSelectedLocation = false;
-                } else {
+                if (this.suppressNextLocationSearch) {
+                    this.suppressNextLocationSearch = false;
+                    this.locationSuggestions = [];
+                    this.locationSuggestionsVisible = false;
+                    this.locationSearchLoading = false;
+                    this.highlightedLocationIndex = -1;
+                    return;
+                }
+
+                // clear selected flag when user types
+                if (!this.justSelectedLocation) {
                     this.selectedLocationLabel = null;
                 }
+
+                this.justSelectedLocation = false;
 
                 if (query.length < 3) {
                     this.locationSuggestions = [];
@@ -444,8 +454,9 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
 
     selectLocationSuggestion(suggestion: GermanCitySuggestion): void {
         this.justSelectedLocation = true;
+        this.suppressNextLocationSearch = true;
         this.selectedLocationLabel = suggestion.label;
-        this.form.patchValue({ LOCATION: suggestion.label });
+        this.form.get('LOCATION')?.setValue(suggestion.label, { emitEvent: false });
         this.locationSuggestions = [];
         this.locationSuggestionsVisible = false;
         this.locationSearchLoading = false;
