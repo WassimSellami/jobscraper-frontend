@@ -4,7 +4,15 @@
         <!-- Search Terms Row -->
         <div class="filters-row-search">
             <div class="filter-group">
-                <label>Search Terms</label>
+                <div class="label-with-buttons">
+                    <label>Search Terms</label>
+                    <div class="label-buttons">
+                        <button type="button" class="label-btn" (click)="selectAllSearchTerms()"
+                            title="Select all">Select All</button>
+                        <button type="button" class="label-btn" (click)="deselectAllSearchTerms()"
+                            title="Deselect all">Deselect All</button>
+                    </div>
+                </div>
                 <div class="chips-wrapper">
                     <div class="chips">
                         <button *ngFor="let term of searchTerms; let i = index" type="button"
@@ -36,7 +44,15 @@
         <!-- Job Level Row -->
         <div class="filters-row-job-level">
             <div class="filter-group">
-                <label>Job Level</label>
+                <div class="label-with-buttons">
+                    <label>Job Level</label>
+                    <div class="label-buttons">
+                        <button type="button" class="label-btn" (click)="selectAllJobLevels()" title="Select all">Select
+                            All</button>
+                        <button type="button" class="label-btn" (click)="deselectAllJobLevels()"
+                            title="Deselect all">Deselect All</button>
+                    </div>
+                </div>
                 <div class="chips-wrapper">
                     <div class="chips">
                         <!-- Now purely toggle chips, no add/remove -->
@@ -50,6 +66,82 @@
                 <span class="error-message" *ngIf="showJobLevelsError">
                     ⚠ Please select at least one job level.
                 </span>
+            </div>
+        </div>
+
+        <!-- Company Exclusions Row -->
+        <div class="filters-row-exclusions">
+            <div class="filter-group">
+                <div class="label-with-buttons">
+                    <label>Exclude Companies</label>
+                    <div class="label-buttons">
+                        <button type="button" class="label-btn" (click)="selectAllCompanyExclusions()"
+                            title="Select all">Select All</button>
+                        <button type="button" class="label-btn" (click)="deselectAllCompanyExclusions()"
+                            title="Deselect all">Deselect All</button>
+                    </div>
+                </div>
+                <div class="chips-wrapper">
+                    <div class="chips">
+                        <button *ngFor="let term of companyExclusionTerms; let i = index" type="button"
+                            class="chip chip-selectable" [class.chip-selected]="isCompanyExclusionSelected(term)"
+                            (click)="toggleCompanyExclusion(term)">
+                            <span class="chip-text">{{ term }}</span>
+                            <span class="chip-remove"
+                                (click)="removeCompanyExclusion(i); $event.stopPropagation()">✕</span>
+                        </button>
+
+                        <ng-container *ngIf="!showCompanyExclusionAddInput">
+                            <button type="button" class="chip-add" (click)="onCompanyExclusionAddClick()">+</button>
+                        </ng-container>
+
+                        <ng-container *ngIf="showCompanyExclusionAddInput">
+                            <input [(ngModel)]="companyExclusionInput" [ngModelOptions]="{standalone: true}"
+                                (keydown)="onCompanyExclusionKeydown($event)" type="text"
+                                placeholder="Add term, press Enter"
+                                class="chip-input chip-input-inline company-exclusion-add-input"
+                                (blur)="cancelCompanyExclusionAdd()" />
+                        </ng-container>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Position Exclusions Row -->
+        <div class="filters-row-exclusions">
+            <div class="filter-group">
+                <div class="label-with-buttons">
+                    <label>Exclude Positions</label>
+                    <div class="label-buttons">
+                        <button type="button" class="label-btn" (click)="selectAllPositionExclusions()"
+                            title="Select all">Select All</button>
+                        <button type="button" class="label-btn" (click)="deselectAllPositionExclusions()"
+                            title="Deselect all">Deselect All</button>
+                    </div>
+                </div>
+                <div class="chips-wrapper">
+                    <div class="chips">
+                        <button *ngFor="let term of positionExclusionTerms; let i = index" type="button"
+                            class="chip chip-selectable" [class.chip-selected]="isPositionExclusionSelected(term)"
+                            (click)="togglePositionExclusion(term)">
+                            <span class="chip-text">{{ term }}</span>
+                            <span class="chip-remove"
+                                (click)="removePositionExclusion(i); $event.stopPropagation()">✕</span>
+                        </button>
+
+                        <ng-container *ngIf="!showPositionExclusionAddInput">
+                            <button type="button" class="chip-add" (click)="onPositionExclusionAddClick()">+</button>
+                        </ng-container>
+
+                        <ng-container *ngIf="showPositionExclusionAddInput">
+                            <input [(ngModel)]="positionExclusionInput" [ngModelOptions]="{standalone: true}"
+                                (keydown)="onPositionExclusionKeydown($event)" type="text"
+                                placeholder="Add term, press Enter"
+                                class="chip-input chip-input-inline position-exclusion-add-input"
+                                (blur)="cancelPositionExclusionAdd()" />
+                        </ng-container>
+                    </div>
+                </div>
             </div>
         </div>
 

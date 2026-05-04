@@ -32,15 +32,57 @@ export class FiltersBarComponent implements OnInit {
         'backend developer',
         'frontend developer'
     ];
+    companyExclusionTerms: string[] = [
+        'Helsing',
+        'Ferchau',
+        'check24',
+        'Bending Spoons',
+        'BMW Group',
+        'NVIDIA',
+        'Amazon',
+    ];
+    positionExclusionTerms: string[] = [
+        'Senior',
+        'Lead',
+        'Professor',
+        'Projektleiter',
+        'Manager',
+        'ERP',
+        'Defence',
+        'Architect',
+        'Architekt',
+        'Working Student',
+        'Werkstudent',
+        'Internship',
+        'Praktikum',
+        'Head of',
+        'Leiter',
+        'Teamleiter',
+        'Geschäftsführer',
+        'Chief',
+        'Masterthesis',
+        'Masterarbeit',
+        'Student assistant',
+        'Embedded Software Engineer',
+        'Site Reliability Engineer',
+        'Staff Frontend Developer',
+        'Praktikant',
+    ];
 
     // ─── Job Levels ────────────────────────────────────────────────────────────
     // Job levels are now fixed (same as ALLOWED_JOB_LEVELS) — no add/remove
     showJobLevelsError = false;
 
+    // ─── Exclusion Terms Input ─────────────────────────────────────────────────
+    companyExclusionInput = '';
+    showCompanyExclusionAddInput = false;
+    positionExclusionInput = '';
+    showPositionExclusionAddInput = false;
+
     // ─── Selections ───────────────────────────────────────────────────────────
     selectedSearchTerms: Set<string> = new Set();
-    selectedJobLevels: Set<string> = new Set();
-
+    selectedJobLevels: Set<string> = new Set(); selectedCompanyExclusions: Set<string> = new Set();
+    selectedPositionExclusions: Set<string> = new Set();
     form: FormGroup;
 
     private readonly DEFAULT_VALUES = {
@@ -55,7 +97,15 @@ export class FiltersBarComponent implements OnInit {
         this.form = this.createForm();
     }
 
-    ngOnInit(): void { }
+    ngOnInit(): void {
+        // Initialize exclusion terms with all selected by default
+        this.selectedCompanyExclusions = new Set(this.companyExclusionTerms);
+        this.selectedPositionExclusions = new Set(this.positionExclusionTerms);
+        this.form.patchValue({
+            COMPANY_EXCLUSION_TERMS: Array.from(this.selectedCompanyExclusions),
+            POSITION_EXCLUSION_TERMS: Array.from(this.selectedPositionExclusions)
+        });
+    }
 
     private createForm(): FormGroup {
         return this.fb.group({
@@ -65,7 +115,9 @@ export class FiltersBarComponent implements OnInit {
             DISTANCE_MILES: [this.DEFAULT_VALUES.DISTANCE_MILES],
             HOURS_OLD: [this.DEFAULT_VALUES.HOURS_OLD],
             RESULTS_WANTED: [this.DEFAULT_VALUES.RESULTS_WANTED],
-            ALLOW_DEUTSCH: [this.DEFAULT_VALUES.ALLOW_DEUTSCH]
+            ALLOW_DEUTSCH: [this.DEFAULT_VALUES.ALLOW_DEUTSCH],
+            POSITION_EXCLUSION_TERMS: [[]],
+            COMPANY_EXCLUSION_TERMS: [[]]
         });
     }
 
@@ -104,6 +156,18 @@ export class FiltersBarComponent implements OnInit {
         return this.selectedSearchTerms.has(term);
     }
 
+    selectAllSearchTerms(): void {
+        this.selectedSearchTerms = new Set(this.searchTerms);
+        this.form.patchValue({ SEARCH_TERMS: Array.from(this.selectedSearchTerms) });
+        this.showSearchTermsError = false;
+    }
+
+    deselectAllSearchTerms(): void {
+        this.selectedSearchTerms.clear();
+        this.form.patchValue({ SEARCH_TERMS: Array.from(this.selectedSearchTerms) });
+        this.showSearchTermsError = true;
+    }
+
     onSearchTermKeydown(event: KeyboardEvent): void {
         if (event.key === 'Enter') {
             event.preventDefault();
@@ -140,6 +204,150 @@ export class FiltersBarComponent implements OnInit {
 
     isJobLevelSelected(level: string): boolean {
         return this.selectedJobLevels.has(level);
+    }
+
+    selectAllJobLevels(): void {
+        this.selectedJobLevels = new Set(this.ALLOWED_JOB_LEVELS);
+        this.form.patchValue({ LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: Array.from(this.selectedJobLevels) });
+        this.showJobLevelsError = false;
+    }
+
+    deselectAllJobLevels(): void {
+        this.selectedJobLevels.clear();
+        this.form.patchValue({ LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: Array.from(this.selectedJobLevels) });
+        this.showJobLevelsError = true;
+    }
+
+    // ─── Exclusion Terms (Positions and Companies) ──────────────────────────────
+
+    toggleCompanyExclusion(term: string): void {
+        if (this.selectedCompanyExclusions.has(term)) {
+            this.selectedCompanyExclusions.delete(term);
+        } else {
+            this.selectedCompanyExclusions.add(term);
+        }
+        this.form.patchValue({ COMPANY_EXCLUSION_TERMS: Array.from(this.selectedCompanyExclusions) });
+    }
+
+    isCompanyExclusionSelected(term: string): boolean {
+        return this.selectedCompanyExclusions.has(term);
+    }
+
+    selectAllCompanyExclusions(): void {
+        this.selectedCompanyExclusions = new Set(this.companyExclusionTerms);
+        this.form.patchValue({ COMPANY_EXCLUSION_TERMS: Array.from(this.selectedCompanyExclusions) });
+    }
+
+    deselectAllCompanyExclusions(): void {
+        this.selectedCompanyExclusions.clear();
+        this.form.patchValue({ COMPANY_EXCLUSION_TERMS: Array.from(this.selectedCompanyExclusions) });
+    }
+
+    togglePositionExclusion(term: string): void {
+        if (this.selectedPositionExclusions.has(term)) {
+            this.selectedPositionExclusions.delete(term);
+        } else {
+            this.selectedPositionExclusions.add(term);
+        }
+        this.form.patchValue({ POSITION_EXCLUSION_TERMS: Array.from(this.selectedPositionExclusions) });
+    }
+
+    isPositionExclusionSelected(term: string): boolean {
+        return this.selectedPositionExclusions.has(term);
+    }
+
+    selectAllPositionExclusions(): void {
+        this.selectedPositionExclusions = new Set(this.positionExclusionTerms);
+        this.form.patchValue({ POSITION_EXCLUSION_TERMS: Array.from(this.selectedPositionExclusions) });
+    }
+
+    deselectAllPositionExclusions(): void {
+        this.selectedPositionExclusions.clear();
+        this.form.patchValue({ POSITION_EXCLUSION_TERMS: Array.from(this.selectedPositionExclusions) });
+    }
+
+    // ─── Add/Remove Company Exclusions ─────────────────────────────────────────
+
+    addCompanyExclusion(): void {
+        const term = this.companyExclusionInput.trim();
+        if (term) {
+            if (!this.companyExclusionTerms.includes(term)) {
+                this.companyExclusionTerms = [...this.companyExclusionTerms, term];
+            }
+            this.companyExclusionInput = '';
+            this.showCompanyExclusionAddInput = false;
+        }
+    }
+
+    removeCompanyExclusion(index: number): void {
+        const term = this.companyExclusionTerms[index];
+        this.companyExclusionTerms = this.companyExclusionTerms.filter((_: string, i: number) => i !== index);
+        this.selectedCompanyExclusions.delete(term);
+        this.form.patchValue({ COMPANY_EXCLUSION_TERMS: Array.from(this.selectedCompanyExclusions) });
+    }
+
+    onCompanyExclusionKeydown(event: KeyboardEvent): void {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            this.addCompanyExclusion();
+        } else if (event.key === 'Escape') {
+            this.cancelCompanyExclusionAdd();
+        }
+    }
+
+    onCompanyExclusionAddClick(): void {
+        this.showCompanyExclusionAddInput = true;
+        setTimeout(() => {
+            const input = document.querySelector('.company-exclusion-add-input') as HTMLInputElement;
+            if (input) input.focus();
+        });
+    }
+
+    cancelCompanyExclusionAdd(): void {
+        this.showCompanyExclusionAddInput = false;
+        this.companyExclusionInput = '';
+    }
+
+    // ─── Add/Remove Position Exclusions ────────────────────────────────────────
+
+    addPositionExclusion(): void {
+        const term = this.positionExclusionInput.trim();
+        if (term) {
+            if (!this.positionExclusionTerms.includes(term)) {
+                this.positionExclusionTerms = [...this.positionExclusionTerms, term];
+            }
+            this.positionExclusionInput = '';
+            this.showPositionExclusionAddInput = false;
+        }
+    }
+
+    removePositionExclusion(index: number): void {
+        const term = this.positionExclusionTerms[index];
+        this.positionExclusionTerms = this.positionExclusionTerms.filter((_: string, i: number) => i !== index);
+        this.selectedPositionExclusions.delete(term);
+        this.form.patchValue({ POSITION_EXCLUSION_TERMS: Array.from(this.selectedPositionExclusions) });
+    }
+
+    onPositionExclusionKeydown(event: KeyboardEvent): void {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            this.addPositionExclusion();
+        } else if (event.key === 'Escape') {
+            this.cancelPositionExclusionAdd();
+        }
+    }
+
+    onPositionExclusionAddClick(): void {
+        this.showPositionExclusionAddInput = true;
+        setTimeout(() => {
+            const input = document.querySelector('.position-exclusion-add-input') as HTMLInputElement;
+            if (input) input.focus();
+        });
+    }
+
+    cancelPositionExclusionAdd(): void {
+        this.showPositionExclusionAddInput = false;
+        this.positionExclusionInput = '';
     }
 
     // ─── ALLOW_DEUTSCH Toggle ──────────────────────────────────────────────────

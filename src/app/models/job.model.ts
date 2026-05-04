@@ -17,4 +17,6 @@ export interface ScraperRequest {
     HOURS_OLD: number;
     RESULTS_WANTED: number;
     ALLOW_DEUTSCH: boolean;
+    POSITION_EXCLUSION_TERMS?: string[];
+    COMPANY_EXCLUSION_TERMS?: string[];
 }
