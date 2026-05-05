@@ -85,6 +85,8 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     showCompanyExclusionAddInput = false;
     positionExclusionInput = '';
     showPositionExclusionAddInput = false;
+    showCompanyExclusions = false;
+    showPositionExclusions = false;
 
     // ─── Selections ───────────────────────────────────────────────────────────
     selectedSearchTerms: Set<string> = new Set();
@@ -341,6 +343,10 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         this.form.patchValue({ COMPANY_EXCLUSION_TERMS: Array.from(this.selectedCompanyExclusions) });
     }
 
+    toggleCompanyExclusionsVisibility(): void {
+        this.showCompanyExclusions = !this.showCompanyExclusions;
+    }
+
     togglePositionExclusion(term: string): void {
         if (this.selectedPositionExclusions.has(term)) {
             this.selectedPositionExclusions.delete(term);
@@ -362,6 +368,10 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     deselectAllPositionExclusions(): void {
         this.selectedPositionExclusions.clear();
         this.form.patchValue({ POSITION_EXCLUSION_TERMS: Array.from(this.selectedPositionExclusions) });
+    }
+
+    togglePositionExclusionsVisibility(): void {
+        this.showPositionExclusions = !this.showPositionExclusions;
     }
 
     // ─── Add/Remove Company Exclusions ─────────────────────────────────────────

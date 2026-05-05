@@ -203,6 +203,7 @@
 }
 
 .filters-row-search .chip,
+.filters-row-sites .chip,
 .filters-row-job-level .chip {
     width: 220px;
     height: 36px;
@@ -214,6 +215,21 @@
     position: relative;
     padding-right: .2rem;
     /* reserve space for the remove button */
+}
+
+.toggle-list-btn {
+    min-width: 36px;
+    padding: 0.25rem 0.55rem;
+}
+
+.arrow {
+    display: inline-block;
+    transition: transform 0.2s ease;
+    line-height: 1;
+}
+
+.arrow.expanded {
+    transform: rotate(180deg);
 }
 
 .filters-row-exclusions .chip {
