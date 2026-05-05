@@ -93,15 +93,13 @@ html[data-theme='dark'] .jobs-loading {
     table-layout: auto;
     font-size: 0.92rem;
     color: var(--text-primary);
-    // ✅ cancel the top border-spacing gap that showed under sticky header
     margin-top: -0.65rem;
 }
 
 .jobs-table thead th {
     position: sticky;
     top: 0;
-    z-index: 10; // ✅ raised from 1 to properly sit above rows
-    // ✅ opaque backgrounds to prevent bleed-through on scroll
+    z-index: 10;
     background: #ffffff;
     color: var(--text-secondary);
     text-align: left;
@@ -110,17 +108,17 @@ html[data-theme='dark'] .jobs-loading {
     letter-spacing: 0.08em;
     font-size: 0.72rem;
     padding: 0.8rem 1rem;
-    // ✅ use box-shadow instead of border-bottom to avoid gap artifact
     box-shadow: 0 1px 0 var(--surface-border);
     border-bottom: none;
 }
 
 html[data-theme='dark'] .jobs-table thead th {
-    background: #0f172a; // ✅ match dark container background
+    background: #0f172a;
 }
 
-.jobs-table thead th:nth-child(3),
-.jobs-table thead th:nth-child(4) {
+.jobs-table thead th:nth-child(1),
+.jobs-table thead th:nth-child(4),
+.jobs-table thead th:nth-child(5) {
     text-align: center;
     padding: 0.8rem 0.6rem;
 }
@@ -153,8 +151,9 @@ html[data-theme='dark'] .jobs-table thead th {
     border-bottom: 1px solid var(--surface-border);
 }
 
-.jobs-table tbody td:nth-child(3),
-.jobs-table tbody td:nth-child(4) {
+.jobs-table tbody td:nth-child(1),
+.jobs-table tbody td:nth-child(4),
+.jobs-table tbody td:nth-child(5) {
     padding: 0.95rem 0.6rem;
     text-align: center;
 }
@@ -179,7 +178,6 @@ html[data-theme='dark'] .jobs-table tbody tr:nth-child(even) td {
     background: rgba(15, 23, 42, 0.85);
 }
 
-// ✅ title-cell now on inner div — flex works reliably here
 .title-cell {
     display: flex;
     flex-direction: column;
@@ -194,7 +192,6 @@ html[data-theme='dark'] .jobs-table tbody tr:nth-child(even) td {
     color: var(--primary-color);
     word-break: break-word;
     overflow-wrap: break-word;
-    // ✅ removed display: block — no longer needed since parent div is flex
 }
 
 .job-link {
@@ -222,6 +219,7 @@ html[data-theme='dark'] .jobs-table tbody tr:nth-child(even) td {
     line-height: 1.35;
 }
 
+.board-badge,
 .level-badge,
 .date-pill {
     display: inline-flex;
@@ -239,20 +237,25 @@ html[data-theme='dark'] .jobs-table tbody tr:nth-child(even) td {
 }
 
 .jobs-table td:nth-child(1) {
-    width: 52%;
+    width: 11%;
+    min-width: 95px;
 }
 
 .jobs-table td:nth-child(2) {
-    width: 30%;
+    width: 45%;
 }
 
 .jobs-table td:nth-child(3) {
+    width: 24%;
+}
+
+.jobs-table td:nth-child(4) {
     width: 10%;
     min-width: 100px;
 }
 
-.jobs-table td:nth-child(4) {
-    width: 8%;
+.jobs-table td:nth-child(5) {
+    width: 10%;
     min-width: 85px;
 }
 
@@ -276,6 +279,30 @@ html[data-theme='dark'] .jobs-table tbody tr:nth-child(even) td {
     .jobs-table tbody td,
     .jobs-table thead th {
         padding: 0.7rem 0.8rem;
+    }
+
+    .jobs-table td:nth-child(1) {
+        width: 12%;
+        min-width: 80px;
+    }
+
+    .jobs-table td:nth-child(2) {
+        width: 44%;
+    }
+
+    .jobs-table td:nth-child(3) {
+        width: 26%;
+        min-width: 90px;
+    }
+
+    .jobs-table td:nth-child(4) {
+        width: 10%;
+        min-width: 75px;
+    }
+
+    .jobs-table td:nth-child(5) {
+        width: 8%;
+        min-width: 70px;
     }
 }
 
@@ -311,6 +338,7 @@ html[data-theme='dark'] .jobs-table tbody tr:nth-child(even) td {
         font-size: 0.65rem;
     }
 
+    .board-badge,
     .level-badge,
     .date-pill {
         font-size: 0.7rem;
@@ -327,21 +355,27 @@ html[data-theme='dark'] .jobs-table tbody tr:nth-child(even) td {
     }
 
     .jobs-table td:nth-child(1) {
-        width: 50%;
+        width: 13%;
+        min-width: 70px;
     }
 
     .jobs-table td:nth-child(2) {
-        width: 28%;
+        width: 43%;
     }
 
     .jobs-table td:nth-child(3) {
-        width: 12%;
-        min-width: 70px;
+        width: 26%;
+        min-width: 80px;
     }
 
     .jobs-table td:nth-child(4) {
         width: 10%;
         min-width: 70px;
+    }
+
+    .jobs-table td:nth-child(5) {
+        width: 8%;
+        min-width: 60px;
     }
 }
 
@@ -382,12 +416,13 @@ html[data-theme='dark'] .jobs-table tbody tr:nth-child(even) td {
         font-weight: 600;
     }
 
-    .jobs-table tbody td:nth-child(3),
-    .jobs-table tbody td:nth-child(4) {
+    .jobs-table tbody td:nth-child(4),
+    .jobs-table tbody td:nth-child(5) {
         padding: 0.5rem 0.3rem;
         text-align: center;
     }
 
+    .board-badge,
     .level-badge,
     .date-pill {
         font-size: 0.65rem;
@@ -405,20 +440,26 @@ html[data-theme='dark'] .jobs-table tbody tr:nth-child(even) td {
     }
 
     .jobs-table td:nth-child(1) {
-        width: 48%;
+        width: 14%;
+        min-width: 60px;
     }
 
     .jobs-table td:nth-child(2) {
-        width: 30%;
+        width: 42%;
     }
 
     .jobs-table td:nth-child(3) {
-        width: 12%;
-        min-width: 60px;
+        width: 24%;
+        min-width: 70px;
     }
 
     .jobs-table td:nth-child(4) {
         width: 10%;
         min-width: 60px;
+    }
+
+    .jobs-table td:nth-child(5) {
+        width: 10%;
+        min-width: 55px;
     }
 }

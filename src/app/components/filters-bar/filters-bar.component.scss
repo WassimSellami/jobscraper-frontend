@@ -18,6 +18,7 @@
 .filters-row-top,
 .filters-row-bottom,
 .filters-row-search,
+.filters-row-sites,
 .filters-row-job-level,
 .filters-row-exclusions {
     display: flex;
@@ -28,12 +29,14 @@
 }
 
 .filters-row-search,
+.filters-row-sites,
 .filters-row-job-level,
 .filters-row-exclusions {
     width: 100%;
 }
 
 .filters-row-search .filter-group,
+.filters-row-sites .filter-group,
 .filters-row-job-level .filter-group,
 .filters-row-exclusions .filter-group {
     flex: 0 1 100%;

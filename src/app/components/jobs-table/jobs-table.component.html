@@ -21,6 +21,7 @@
         <table class="jobs-table" *ngIf="jobs && jobs.length > 0">
             <thead>
                 <tr>
+                    <th>Board</th>
                     <th>Job Title</th>
                     <th>Company</th>
                     <th>Level</th>
@@ -30,7 +31,9 @@
             <tbody>
                 <tr *ngFor="let job of jobs">
                     <td>
-                        <!-- ✅ flex moved to inner div, not on <td> directly -->
+                        <span class="board-badge">{{ job.job_board || 'N/A' }}</span>
+                    </td>
+                    <td>
                         <div class="title-cell">
                             <a *ngIf="job.job_url; else plainTitle" [href]="job.job_url" target="_blank"
                                 rel="noopener noreferrer" class="job-link">
@@ -48,7 +51,7 @@
                         </div>
                     </td>
                     <td>
-                        <span class="level-badge">{{ job.job_level }}</span>
+                        <span class="level-badge">{{ job.job_level || 'N/A' }}</span>
                     </td>
                     <td>
                         <span class="date-pill">{{ formatDatePosted(job.date_posted) }}</span>

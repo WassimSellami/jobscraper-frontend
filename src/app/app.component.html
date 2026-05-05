@@ -10,7 +10,7 @@
         </div>
 
         <div *ngIf="!jobs || jobs.length === 0" class="no-jobs">
-            <p>No jobs to display yet. Click "Scrape" to run the scraper.</p>
+            <p>No jobs to display yet. Click "Scrape" to run the search.</p>
         </div>
 
         <app-jobs-table *ngIf="jobs && jobs.length > 0" [jobs]="jobs" [isLoading]="isLoading"></app-jobs-table>

@@ -18,11 +18,13 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     @Input() jobs: any[] = [];
 
     readonly ALLOWED_JOB_LEVELS = ['entry level', 'mid-senior level'];
+    readonly AVAILABLE_SITES = ['linkedin', 'indeed'];
 
     // ─── Search Terms ──────────────────────────────────────────────────────────
     searchTermsInput = '';
     showSearchTermsAddInput = false;
     showSearchTermsError = false;
+    showSitesError = false;
     searchTerms: string[] = [
         'software engineer',
         'software developer',
@@ -75,6 +77,9 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     // Job levels are now fixed (same as ALLOWED_JOB_LEVELS) — no add/remove
     showJobLevelsError = false;
 
+    // ─── Sites ────────────────────────────────────────────────────────────────
+    selectedSites: Set<string> = new Set();
+
     // ─── Exclusion Terms Input ─────────────────────────────────────────────────
     companyExclusionInput = '';
     showCompanyExclusionAddInput = false;
@@ -112,6 +117,8 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     }
 
     ngOnInit(): void {
+        this.selectedSites = new Set(this.AVAILABLE_SITES);
+
         // Initialize exclusion terms with all selected by default
         this.selectedCompanyExclusions = new Set(this.companyExclusionTerms);
         this.selectedPositionExclusions = new Set(this.positionExclusionTerms);
@@ -171,6 +178,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     private createForm(): FormGroup {
         return this.fb.group({
             SEARCH_TERMS: [[]],
+            sites: [[]],
             LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: [[]],
             LOCATION: [this.DEFAULT_VALUES.LOCATION, Validators.required],
             DISTANCE_MILES: [this.DEFAULT_VALUES.DISTANCE_MILES],
@@ -180,6 +188,35 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
             POSITION_EXCLUSION_TERMS: [[]],
             COMPANY_EXCLUSION_TERMS: [[]]
         });
+    }
+
+    // ─── Sites ────────────────────────────────────────────────────────────────
+
+    toggleSite(site: string): void {
+        if (this.selectedSites.has(site)) {
+            this.selectedSites.delete(site);
+        } else {
+            this.selectedSites.add(site);
+        }
+
+        this.form.patchValue({ sites: Array.from(this.selectedSites) });
+        this.showSitesError = this.selectedSites.size === 0;
+    }
+
+    isSiteSelected(site: string): boolean {
+        return this.selectedSites.has(site);
+    }
+
+    selectAllSites(): void {
+        this.selectedSites = new Set(this.AVAILABLE_SITES);
+        this.form.patchValue({ sites: Array.from(this.selectedSites) });
+        this.showSitesError = false;
+    }
+
+    deselectAllSites(): void {
+        this.selectedSites.clear();
+        this.form.patchValue({ sites: Array.from(this.selectedSites) });
+        this.showSitesError = true;
     }
 
     // ─── Search Terms ──────────────────────────────────────────────────────────
@@ -486,7 +523,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     }
 
     isFormValid(): boolean {
-        return this.form.valid && this.isSearchTermsValid() && this.isJobLevelsValid();
+        return this.form.valid && this.isSearchTermsValid() && this.isJobLevelsValid() && this.selectedSites.size > 0;
     }
 
     // ─── Actions ───────────────────────────────────────────────────────────────
@@ -495,6 +532,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         // Trigger error messages on attempted scrape with invalid state
         this.showSearchTermsError = !this.isSearchTermsValid();
         this.showJobLevelsError = !this.isJobLevelsValid();
+        this.showSitesError = this.selectedSites.size === 0;
         // Ensure location must be selected from suggestions
         if (!this.selectedLocationLabel) {
             this.showLocationError = true;
@@ -503,6 +541,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         }
 
         if (!this.isLoading && this.isFormValid()) {
+            this.form.patchValue({ sites: Array.from(this.selectedSites) });
             this.scrape.emit(this.form.getRawValue());
         }
     }
@@ -513,12 +552,14 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
             return;
         }
 
-        const headers = ['Title', 'Company', 'Location', 'Job Level', 'Date Posted', 'Job URL'];
+        const headers = ['Board', 'Title', 'Company', 'Location', 'Job Level', 'Industry', 'Date Posted', 'Job URL'];
         const rows = this.jobs.map(job => [
+            job.job_board || 'N/A',
             job.title || '',
             job.company || '',
             job.location || '',
-            job.job_level || '',
+            job.job_level || 'N/A',
+            job.company_industry || 'N/A',
             job.date_posted || '',
             job.job_url || ''
         ]);
@@ -532,7 +573,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `linkedin-jobs-${new Date().toISOString().slice(0, 10)}.csv`);
+        link.setAttribute('download', `jobs-${new Date().toISOString().slice(0, 10)}.csv`);
         link.click();
         URL.revokeObjectURL(url);
     }

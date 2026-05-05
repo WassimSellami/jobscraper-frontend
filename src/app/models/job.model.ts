@@ -3,14 +3,16 @@ export interface Job {
     company: string;
     company_industry?: string;
     location?: string;
-    job_level: string;
+    job_level?: string | null;
     date_posted: string | null;
     job_url: string;
+    job_board?: string | null;
     [key: string]: any; // Allow any additional fields from backend
 }
 
 export interface ScraperRequest {
     SEARCH_TERMS: string[];
+    sites: string[];
     LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: string[];
     LOCATION: string;
     DISTANCE_MILES: number;

@@ -9,7 +9,7 @@ import { environment } from '../../environments/environment';
 })
 export class ScraperService {
     private readonly API_BASE_URL = environment.apiBaseUrl;
-    private readonly SCRAPE_ENDPOINT = '/api/scrape/linkedin';
+    private readonly SCRAPE_ENDPOINT = '/api/scrape/all';
 
     private jobsSubject = new BehaviorSubject<Job[]>([]);
     private isLoadingSubject = new BehaviorSubject<boolean>(false);
