@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { Job, ScraperRequest } from '../models/job.model';
+import { Job } from '../models/job.model';
+import { UserProfile } from '../models/user-profile.model';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -21,12 +22,12 @@ export class ScraperService {
 
     constructor(private http: HttpClient) { }
 
-    public scrape(request: ScraperRequest): void {
+    public scrape(profile: UserProfile): void {
         this.isLoadingSubject.next(true);
         this.errorSubject.next(null);
 
         this.http
-            .post<Job[]>(`${this.API_BASE_URL}${this.SCRAPE_ENDPOINT}`, request)
+            .post<Job[]>(`${this.API_BASE_URL}${this.SCRAPE_ENDPOINT}`, profile)
             .subscribe({
                 next: (jobs: Job[]) => {
                     this.jobsSubject.next(jobs);

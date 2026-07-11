@@ -4,7 +4,8 @@ import { HeaderComponent } from './components/header/header.component';
 import { FiltersBarComponent } from './components/filters-bar/filters-bar.component';
 import { JobsTableComponent } from './components/jobs-table/jobs-table.component';
 import { ScraperService } from './services/scraper.service';
-import { Job, ScraperRequest } from './models/job.model';
+import { Job } from './models/job.model';
+import { UserProfile } from './models/user-profile.model';
 
 @Component({
     selector: 'app-root',
@@ -34,8 +35,8 @@ export class AppComponent implements OnInit {
         });
     }
 
-    onScrape(request: ScraperRequest): void {
+    onScrape(profile: UserProfile): void {
         this.error = null;
-        this.scraperService.scrape(request);
+        this.scraperService.scrape(profile);
     }
 }

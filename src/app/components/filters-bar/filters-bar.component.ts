@@ -2,8 +2,9 @@ import { Component, EventEmitter, Output, Input, OnInit, OnDestroy, inject } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, map, of, switchMap, takeUntil, tap } from 'rxjs';
-import { ScraperRequest } from '../../models/job.model';
+import { UserProfile, UserProfilePayload, DEFAULT_USER_PROFILE } from '../../models/user-profile.model';
 import { GermanCityAutocompleteService, GermanCitySuggestion } from '../../services/german-city-autocomplete.service';
+import { UserProfileService } from '../../services/user-profile.service';
 
 @Component({
     selector: 'app-filters-bar',
@@ -13,12 +14,18 @@ import { GermanCityAutocompleteService, GermanCitySuggestion } from '../../servi
     styleUrls: ['./filters-bar.component.scss']
 })
 export class FiltersBarComponent implements OnInit, OnDestroy {
-    @Output() scrape = new EventEmitter<ScraperRequest>();
+    @Output() scrape = new EventEmitter<UserProfile>();
     @Input() isLoading = false;
     @Input() jobs: any[] = [];
 
     readonly ALLOWED_JOB_LEVELS = ['entry level', 'mid-senior level'];
     readonly AVAILABLE_SITES = ['linkedin', 'indeed'];
+
+    profiles: UserProfile[] = [];
+    selectedProfileId: string | null = null;
+    profileStatusMessage: string | null = null;
+    isProfilesLoading = false;
+    isProfileSaving = false;
 
     // ─── Search Terms ──────────────────────────────────────────────────────────
     searchTermsInput = '';
@@ -90,7 +97,8 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
 
     // ─── Selections ───────────────────────────────────────────────────────────
     selectedSearchTerms: Set<string> = new Set();
-    selectedJobLevels: Set<string> = new Set(); selectedCompanyExclusions: Set<string> = new Set();
+    selectedJobLevels: Set<string> = new Set();
+    selectedCompanyExclusions: Set<string> = new Set();
     selectedPositionExclusions: Set<string> = new Set();
     form: FormGroup;
     locationSuggestions: GermanCitySuggestion[] = [];
@@ -104,32 +112,24 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
 
     private readonly destroy$ = new Subject<void>();
     private readonly germanCityAutocompleteService = inject(GermanCityAutocompleteService);
+    private readonly userProfileService = inject(UserProfileService);
 
     private readonly DEFAULT_VALUES = {
-        LOCATION: 'Munich, Germany',
-        DISTANCE_MILES: 31,
-        HOURS_OLD: 24,
-        RESULTS_WANTED: 10,
-        ALLOW_DEUTSCH: false
+        location: DEFAULT_USER_PROFILE.location,
+        distance_miles: DEFAULT_USER_PROFILE.distance_miles,
+        hours_old: DEFAULT_USER_PROFILE.hours_old,
+        allow_deutsch: DEFAULT_USER_PROFILE.allow_deutsch
     };
 
     constructor(private fb: FormBuilder) {
         this.form = this.createForm();
-        this.selectedLocationLabel = this.DEFAULT_VALUES.LOCATION;
+        this.selectedLocationLabel = this.DEFAULT_VALUES.location;
     }
 
     ngOnInit(): void {
-        this.selectedSites = new Set(this.AVAILABLE_SITES);
+        this.loadProfiles();
 
-        // Initialize exclusion terms with all selected by default
-        this.selectedCompanyExclusions = new Set(this.companyExclusionTerms);
-        this.selectedPositionExclusions = new Set(this.positionExclusionTerms);
-        this.form.patchValue({
-            COMPANY_EXCLUSION_TERMS: Array.from(this.selectedCompanyExclusions),
-            POSITION_EXCLUSION_TERMS: Array.from(this.selectedPositionExclusions)
-        });
-
-        this.form.get('LOCATION')?.valueChanges.pipe(
+        this.form.get('location')?.valueChanges.pipe(
             map((value: unknown) => String(value ?? '').trim()),
             debounceTime(250),
             distinctUntilChanged(),
@@ -179,16 +179,240 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
 
     private createForm(): FormGroup {
         return this.fb.group({
-            SEARCH_TERMS: [[]],
+            search_terms: [[]],
             sites: [[]],
-            LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: [[]],
-            LOCATION: [this.DEFAULT_VALUES.LOCATION, Validators.required],
-            DISTANCE_MILES: [this.DEFAULT_VALUES.DISTANCE_MILES],
-            HOURS_OLD: [this.DEFAULT_VALUES.HOURS_OLD],
-            RESULTS_WANTED: [this.DEFAULT_VALUES.RESULTS_WANTED],
-            ALLOW_DEUTSCH: [this.DEFAULT_VALUES.ALLOW_DEUTSCH],
-            POSITION_EXCLUSION_TERMS: [[]],
-            COMPANY_EXCLUSION_TERMS: [[]]
+            job_levels: [[]],
+            location: [this.DEFAULT_VALUES.location, Validators.required],
+            distance_miles: [this.DEFAULT_VALUES.distance_miles],
+            hours_old: [this.DEFAULT_VALUES.hours_old],
+            allow_deutsch: [this.DEFAULT_VALUES.allow_deutsch],
+            excluded_positions: [[]],
+            excluded_companies: [[]]
+        });
+    }
+
+    private createBlankProfile(): UserProfile {
+        return {
+            search_terms: [],
+            job_levels: [],
+            excluded_companies: [],
+            sites: [...this.AVAILABLE_SITES],
+            excluded_positions: [],
+            location: this.DEFAULT_VALUES.location,
+            distance_miles: this.DEFAULT_VALUES.distance_miles,
+            hours_old: this.DEFAULT_VALUES.hours_old,
+            allow_deutsch: this.DEFAULT_VALUES.allow_deutsch
+        };
+    }
+
+    private normalizeProfile(profile: Partial<UserProfile>): UserProfile {
+        return {
+            profile_id: profile.profile_id,
+            search_terms: [...(profile.search_terms ?? [])],
+            job_levels: [...(profile.job_levels ?? [])],
+            excluded_companies: [...(profile.excluded_companies ?? [])],
+            sites: [...(profile.sites ?? this.AVAILABLE_SITES)],
+            excluded_positions: [...(profile.excluded_positions ?? [])],
+            location: String(profile.location ?? this.DEFAULT_VALUES.location).trim(),
+            distance_miles: Number(profile.distance_miles ?? this.DEFAULT_VALUES.distance_miles),
+            hours_old: Number(profile.hours_old ?? this.DEFAULT_VALUES.hours_old),
+            allow_deutsch: Boolean(profile.allow_deutsch ?? this.DEFAULT_VALUES.allow_deutsch)
+        };
+    }
+
+    private setProfileMessage(message: string | null): void {
+        this.profileStatusMessage = message;
+    }
+
+    private syncSearchTerms(): void {
+        this.form.patchValue({ search_terms: Array.from(this.selectedSearchTerms) });
+        this.showSearchTermsError = this.selectedSearchTerms.size === 0;
+    }
+
+    private syncSites(): void {
+        this.form.patchValue({ sites: Array.from(this.selectedSites) });
+        this.showSitesError = this.selectedSites.size === 0;
+    }
+
+    private syncJobLevels(): void {
+        this.form.patchValue({ job_levels: Array.from(this.selectedJobLevels) });
+        this.showJobLevelsError = this.selectedJobLevels.size === 0;
+    }
+
+    private syncCompanyExclusions(): void {
+        this.form.patchValue({ excluded_companies: Array.from(this.selectedCompanyExclusions) });
+    }
+
+    private syncPositionExclusions(): void {
+        this.form.patchValue({ excluded_positions: Array.from(this.selectedPositionExclusions) });
+    }
+
+    private syncSelectionsFromProfile(profile: UserProfile): void {
+        this.selectedSearchTerms = new Set(profile.search_terms ?? []);
+        this.selectedJobLevels = new Set(profile.job_levels ?? []);
+        this.selectedSites = new Set(profile.sites?.length ? profile.sites : this.AVAILABLE_SITES);
+        this.selectedCompanyExclusions = new Set(profile.excluded_companies ?? []);
+        this.selectedPositionExclusions = new Set(profile.excluded_positions ?? []);
+        this.selectedLocationLabel = profile.location || null;
+        this.showSearchTermsError = false;
+        this.showJobLevelsError = false;
+        this.showSitesError = false;
+        this.showLocationError = false;
+    }
+
+    private applyProfile(profile: UserProfile): void {
+        const normalized = this.normalizeProfile(profile);
+        this.selectedProfileId = normalized.profile_id ?? null;
+        this.form.patchValue(
+            {
+                search_terms: [...normalized.search_terms],
+                sites: [...normalized.sites],
+                job_levels: [...normalized.job_levels],
+                location: normalized.location,
+                distance_miles: normalized.distance_miles,
+                hours_old: normalized.hours_old,
+                allow_deutsch: normalized.allow_deutsch,
+                excluded_positions: [...normalized.excluded_positions],
+                excluded_companies: [...normalized.excluded_companies]
+            },
+            { emitEvent: false }
+        );
+        this.syncSelectionsFromProfile(normalized);
+        this.locationSuggestions = [];
+        this.locationSuggestionsVisible = false;
+        this.locationSearchLoading = false;
+        this.highlightedLocationIndex = -1;
+        this.setProfileMessage(this.selectedProfileId ? `Editing profile ${this.selectedProfileId}.` : 'Editing a new profile.');
+    }
+
+    private buildProfilePayload(): UserProfilePayload {
+        const rawValue = this.form.getRawValue();
+
+        return {
+            search_terms: Array.from(this.selectedSearchTerms),
+            job_levels: Array.from(this.selectedJobLevels),
+            excluded_companies: Array.from(this.selectedCompanyExclusions),
+            sites: Array.from(this.selectedSites),
+            excluded_positions: Array.from(this.selectedPositionExclusions),
+            location: String(rawValue.location ?? '').trim(),
+            distance_miles: Number(rawValue.distance_miles ?? this.DEFAULT_VALUES.distance_miles),
+            hours_old: Number(rawValue.hours_old ?? this.DEFAULT_VALUES.hours_old),
+            allow_deutsch: Boolean(rawValue.allow_deutsch)
+        };
+    }
+
+    private buildActiveProfile(): UserProfile {
+        return {
+            profile_id: this.selectedProfileId ?? undefined,
+            ...this.buildProfilePayload()
+        };
+    }
+
+    private loadProfiles(selectProfileId?: string | null): void {
+        this.isProfilesLoading = true;
+        this.userProfileService.getProfiles().subscribe({
+            next: (profiles: UserProfile[]) => {
+                this.profiles = profiles;
+                const profileToSelect = selectProfileId
+                    ? profiles.find(profile => profile.profile_id === selectProfileId)
+                    : profiles[0];
+
+                if (profileToSelect) {
+                    this.applyProfile(profileToSelect);
+                } else {
+                    this.applyProfile(this.createBlankProfile());
+                }
+
+                this.isProfilesLoading = false;
+            },
+            error: (err) => {
+                console.error('Profile load error:', err);
+                this.profiles = [];
+                this.applyProfile(this.createBlankProfile());
+                this.setProfileMessage(err.error?.detail || 'Failed to load saved profiles.');
+                this.isProfilesLoading = false;
+            }
+        });
+    }
+
+    selectProfile(profileId: string): void {
+        if (!profileId) {
+            this.createNewProfile();
+            return;
+        }
+
+        const selected = this.profiles.find(profile => profile.profile_id === profileId);
+        if (selected) {
+            this.applyProfile(selected);
+        }
+    }
+
+    createNewProfile(): void {
+        this.applyProfile(this.createBlankProfile());
+        this.setProfileMessage('Editing a new profile.');
+    }
+
+    saveProfile(): void {
+        if (!this.isFormValid()) {
+            this.setProfileMessage('Fix the form before saving this profile.');
+            return;
+        }
+
+        const payload = this.buildProfilePayload();
+        const existingProfileId = this.selectedProfileId?.trim();
+        this.isProfileSaving = true;
+
+        const request = existingProfileId
+            ? this.userProfileService.updateProfile(existingProfileId, payload)
+            : this.userProfileService.createProfile(payload);
+
+        request.subscribe({
+            next: (savedProfile: UserProfile) => {
+                this.profiles = existingProfileId
+                    ? this.profiles.map(profile => profile.profile_id === savedProfile.profile_id ? savedProfile : profile)
+                    : [...this.profiles, savedProfile];
+                this.applyProfile(savedProfile);
+                this.setProfileMessage(existingProfileId ? 'Profile updated.' : 'Profile created.');
+                this.isProfileSaving = false;
+            },
+            error: (err) => {
+                console.error('Profile save error:', err);
+                this.setProfileMessage(err.error?.detail || 'Failed to save profile.');
+                this.isProfileSaving = false;
+            }
+        });
+    }
+
+    deleteProfile(): void {
+        if (!this.selectedProfileId) {
+            return;
+        }
+
+        const profileId = this.selectedProfileId;
+        if (!confirm('Delete this profile?')) {
+            return;
+        }
+
+        this.isProfileSaving = true;
+        this.userProfileService.deleteProfile(profileId).subscribe({
+            next: () => {
+                this.profiles = this.profiles.filter(profile => profile.profile_id !== profileId);
+                const nextProfile = this.profiles[0];
+
+                if (nextProfile) {
+                    this.applyProfile(nextProfile);
+                } else {
+                    this.applyProfile(this.createBlankProfile());
+                }
+
+                this.setProfileMessage('Profile deleted.');
+                this.isProfileSaving = false;
+            },
+            error: (err) => {
+                console.error('Profile delete error:', err);
+                this.setProfileMessage(err.error?.detail || 'Failed to delete profile.');
+                this.isProfileSaving = false;
+            }
         });
     }
 
@@ -201,8 +425,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
             this.selectedSites.add(site);
         }
 
-        this.form.patchValue({ sites: Array.from(this.selectedSites) });
-        this.showSitesError = this.selectedSites.size === 0;
+        this.syncSites();
     }
 
     isSiteSelected(site: string): boolean {
@@ -211,14 +434,12 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
 
     selectAllSites(): void {
         this.selectedSites = new Set(this.AVAILABLE_SITES);
-        this.form.patchValue({ sites: Array.from(this.selectedSites) });
-        this.showSitesError = false;
+        this.syncSites();
     }
 
     deselectAllSites(): void {
         this.selectedSites.clear();
-        this.form.patchValue({ sites: Array.from(this.selectedSites) });
-        this.showSitesError = true;
+        this.syncSites();
     }
 
     // ─── Search Terms ──────────────────────────────────────────────────────────
@@ -238,8 +459,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         const term = this.searchTerms[index];
         this.searchTerms = this.searchTerms.filter((_: string, i: number) => i !== index);
         this.selectedSearchTerms.delete(term);
-        this.form.patchValue({ SEARCH_TERMS: Array.from(this.selectedSearchTerms) });
-        if (this.selectedSearchTerms.size === 0) this.showSearchTermsError = true;
+        this.syncSearchTerms();
     }
 
     toggleSearchTerm(term: string): void {
@@ -248,8 +468,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         } else {
             this.selectedSearchTerms.add(term);
         }
-        this.form.patchValue({ SEARCH_TERMS: Array.from(this.selectedSearchTerms) });
-        this.showSearchTermsError = this.selectedSearchTerms.size === 0;
+        this.syncSearchTerms();
     }
 
     isSearchTermSelected(term: string): boolean {
@@ -258,14 +477,12 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
 
     selectAllSearchTerms(): void {
         this.selectedSearchTerms = new Set(this.searchTerms);
-        this.form.patchValue({ SEARCH_TERMS: Array.from(this.selectedSearchTerms) });
-        this.showSearchTermsError = false;
+        this.syncSearchTerms();
     }
 
     deselectAllSearchTerms(): void {
         this.selectedSearchTerms.clear();
-        this.form.patchValue({ SEARCH_TERMS: Array.from(this.selectedSearchTerms) });
-        this.showSearchTermsError = true;
+        this.syncSearchTerms();
     }
 
     onSearchTermKeydown(event: KeyboardEvent): void {
@@ -298,8 +515,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         } else {
             this.selectedJobLevels.add(level);
         }
-        this.form.patchValue({ LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: Array.from(this.selectedJobLevels) });
-        this.showJobLevelsError = this.selectedJobLevels.size === 0;
+        this.syncJobLevels();
     }
 
     isJobLevelSelected(level: string): boolean {
@@ -308,14 +524,12 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
 
     selectAllJobLevels(): void {
         this.selectedJobLevels = new Set(this.ALLOWED_JOB_LEVELS);
-        this.form.patchValue({ LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: Array.from(this.selectedJobLevels) });
-        this.showJobLevelsError = false;
+        this.syncJobLevels();
     }
 
     deselectAllJobLevels(): void {
         this.selectedJobLevels.clear();
-        this.form.patchValue({ LINKEDIN_JOB_LEVEL_ALLOWED_VALUES: Array.from(this.selectedJobLevels) });
-        this.showJobLevelsError = true;
+        this.syncJobLevels();
     }
 
     // ─── Exclusion Terms (Positions and Companies) ──────────────────────────────
@@ -326,7 +540,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         } else {
             this.selectedCompanyExclusions.add(term);
         }
-        this.form.patchValue({ COMPANY_EXCLUSION_TERMS: Array.from(this.selectedCompanyExclusions) });
+        this.syncCompanyExclusions();
     }
 
     isCompanyExclusionSelected(term: string): boolean {
@@ -335,12 +549,12 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
 
     selectAllCompanyExclusions(): void {
         this.selectedCompanyExclusions = new Set(this.companyExclusionTerms);
-        this.form.patchValue({ COMPANY_EXCLUSION_TERMS: Array.from(this.selectedCompanyExclusions) });
+        this.syncCompanyExclusions();
     }
 
     deselectAllCompanyExclusions(): void {
         this.selectedCompanyExclusions.clear();
-        this.form.patchValue({ COMPANY_EXCLUSION_TERMS: Array.from(this.selectedCompanyExclusions) });
+        this.syncCompanyExclusions();
     }
 
     toggleCompanyExclusionsVisibility(): void {
@@ -353,7 +567,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         } else {
             this.selectedPositionExclusions.add(term);
         }
-        this.form.patchValue({ POSITION_EXCLUSION_TERMS: Array.from(this.selectedPositionExclusions) });
+        this.syncPositionExclusions();
     }
 
     isPositionExclusionSelected(term: string): boolean {
@@ -362,12 +576,12 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
 
     selectAllPositionExclusions(): void {
         this.selectedPositionExclusions = new Set(this.positionExclusionTerms);
-        this.form.patchValue({ POSITION_EXCLUSION_TERMS: Array.from(this.selectedPositionExclusions) });
+        this.syncPositionExclusions();
     }
 
     deselectAllPositionExclusions(): void {
         this.selectedPositionExclusions.clear();
-        this.form.patchValue({ POSITION_EXCLUSION_TERMS: Array.from(this.selectedPositionExclusions) });
+        this.syncPositionExclusions();
     }
 
     togglePositionExclusionsVisibility(): void {
@@ -391,7 +605,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         const term = this.companyExclusionTerms[index];
         this.companyExclusionTerms = this.companyExclusionTerms.filter((_: string, i: number) => i !== index);
         this.selectedCompanyExclusions.delete(term);
-        this.form.patchValue({ COMPANY_EXCLUSION_TERMS: Array.from(this.selectedCompanyExclusions) });
+        this.syncCompanyExclusions();
     }
 
     onCompanyExclusionKeydown(event: KeyboardEvent): void {
@@ -433,7 +647,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         const term = this.positionExclusionTerms[index];
         this.positionExclusionTerms = this.positionExclusionTerms.filter((_: string, i: number) => i !== index);
         this.selectedPositionExclusions.delete(term);
-        this.form.patchValue({ POSITION_EXCLUSION_TERMS: Array.from(this.selectedPositionExclusions) });
+        this.syncPositionExclusions();
     }
 
     onPositionExclusionKeydown(event: KeyboardEvent): void {
@@ -467,10 +681,10 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     onLocationBlur(): void {
         setTimeout(() => {
             // If the user didn't pick from the list, clear the field and mark as required
-            const current = String(this.form.get('LOCATION')?.value ?? '').trim();
+            const current = String(this.form.get('location')?.value ?? '').trim();
             if (!this.selectedLocationLabel || this.selectedLocationLabel !== current) {
-                this.form.patchValue({ LOCATION: '' });
-                this.form.get('LOCATION')?.setErrors({ required: true });
+                this.form.patchValue({ location: '' });
+                this.form.get('location')?.setErrors({ required: true });
                 this.showLocationError = true;
             }
             this.locationSuggestionsVisible = false;
@@ -503,7 +717,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         this.justSelectedLocation = true;
         this.suppressNextLocationSearch = true;
         this.selectedLocationLabel = suggestion.label;
-        this.form.get('LOCATION')?.setValue(suggestion.label, { emitEvent: false });
+        this.form.get('location')?.setValue(suggestion.label, { emitEvent: false });
         this.locationSuggestions = [];
         this.locationSuggestionsVisible = false;
         this.locationSearchLoading = false;
@@ -514,12 +728,12 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     // ─── ALLOW_DEUTSCH Toggle ──────────────────────────────────────────────────
 
     toggleAllowDeutsch(): void {
-        const currentValue = this.form.get('ALLOW_DEUTSCH')?.value || false;
-        this.form.patchValue({ ALLOW_DEUTSCH: !currentValue });
+        const currentValue = this.form.get('allow_deutsch')?.value || false;
+        this.form.patchValue({ allow_deutsch: !currentValue });
     }
 
     isAllowDeutschEnabled(): boolean {
-        return this.form.get('ALLOW_DEUTSCH')?.value || false;
+        return this.form.get('allow_deutsch')?.value || false;
     }
 
     // ─── Validation ────────────────────────────────────────────────────────────
@@ -547,12 +761,11 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         if (!this.selectedLocationLabel) {
             this.showLocationError = true;
             // mark control invalid
-            this.form.get('LOCATION')?.setErrors({ required: true });
+            this.form.get('location')?.setErrors({ required: true });
         }
 
         if (!this.isLoading && this.isFormValid()) {
-            this.form.patchValue({ sites: Array.from(this.selectedSites) });
-            this.scrape.emit(this.form.getRawValue());
+            this.scrape.emit(this.buildActiveProfile());
         }
     }
 
