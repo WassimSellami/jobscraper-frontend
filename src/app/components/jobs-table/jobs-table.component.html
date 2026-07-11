@@ -14,8 +14,12 @@
             Refreshing the latest jobs...
         </div>
 
-        <div class="jobs-empty" *ngIf="!jobs || jobs.length === 0">
-            No jobs to display yet. Run a scrape to populate the table.
+        <div class="jobs-empty" *ngIf="!isLoading && !jobs?.length && !hasSearched">
+            No jobs to display yet. Click "Sync jobs" to run the search.
+        </div>
+
+        <div class="jobs-empty" *ngIf="!isLoading && !jobs?.length && hasSearched">
+            No jobs were found for the selected filters.
         </div>
 
         <table class="jobs-table" *ngIf="jobs && jobs.length > 0">

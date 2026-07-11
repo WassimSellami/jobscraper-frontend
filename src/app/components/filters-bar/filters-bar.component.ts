@@ -193,7 +193,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     private applyProfile(profile: UserProfile): void {
         const normalized = this.normalizeProfile(profile);
         this.selectedProfileId = normalized.profile_id ?? null;
-        this.searchTerms = this.mergeUniqueValues(this.searchTerms, normalized.search_terms);
+        this.searchTerms = [...normalized.search_terms];
         this.companyExclusionTerms = this.mergeUniqueValues(this.companyExclusionTerms, normalized.excluded_companies);
         this.positionExclusionTerms = this.mergeUniqueValues(this.positionExclusionTerms, normalized.excluded_positions);
         this.form.patchValue(

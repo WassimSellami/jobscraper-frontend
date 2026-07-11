@@ -18,6 +18,7 @@ export class AppComponent implements OnInit {
     jobs: Job[] = [];
     isLoading = false;
     error: string | null = null;
+    hasSearched = false;
 
     constructor(private scraperService: ScraperService) { }
 
@@ -37,6 +38,7 @@ export class AppComponent implements OnInit {
 
     onScrape(profile: UserProfile): void {
         this.error = null;
+        this.hasSearched = true;
         this.scraperService.scrape(profile);
     }
 }

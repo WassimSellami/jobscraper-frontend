@@ -12,6 +12,7 @@ import { Job } from '../../models/job.model';
 export class JobsTableComponent implements OnInit {
     @Input() jobs: Job[] = [];
     @Input() isLoading = false;
+    @Input() hasSearched = false;
 
     ngOnInit(): void {
         console.log('JobsTableComponent initialized, initial jobs:', this.jobs?.length);
