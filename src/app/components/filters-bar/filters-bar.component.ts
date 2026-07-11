@@ -1,9 +1,8 @@
 import { Component, EventEmitter, Output, Input, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged, map, of, switchMap, takeUntil, tap } from 'rxjs';
+import { Subject } from 'rxjs';
 import { UserProfile, UserProfilePayload, DEFAULT_USER_PROFILE } from '../../models/user-profile.model';
-import { GermanCityAutocompleteService, GermanCitySuggestion } from '../../services/german-city-autocomplete.service';
 import { UserProfileService } from '../../services/user-profile.service';
 
 @Component({
@@ -19,7 +18,6 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     @Input() jobs: any[] = [];
 
     readonly ALLOWED_JOB_LEVELS = ['entry level', 'mid-senior level'];
-    readonly AVAILABLE_SITES = ['linkedin', 'indeed'];
 
     profiles: UserProfile[] = [];
     selectedProfileId: string | null = null;
@@ -31,7 +29,6 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     searchTermsInput = '';
     showSearchTermsAddInput = false;
     showSearchTermsError = false;
-    showSitesError = false;
     searchTerms: string[] = [
         'software engineer',
         'software developer',
@@ -85,8 +82,6 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     showJobLevelsError = false;
 
     // ─── Sites ────────────────────────────────────────────────────────────────
-    selectedSites: Set<string> = new Set();
-
     // ─── Exclusion Terms Input ─────────────────────────────────────────────────
     companyExclusionInput = '';
     showCompanyExclusionAddInput = false;
@@ -101,75 +96,20 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     selectedCompanyExclusions: Set<string> = new Set();
     selectedPositionExclusions: Set<string> = new Set();
     form: FormGroup;
-    locationSuggestions: GermanCitySuggestion[] = [];
-    locationSuggestionsVisible = false;
-    locationSearchLoading = false;
-    highlightedLocationIndex = -1;
-    selectedLocationLabel: string | null = null;
-    showLocationError = false;
-    private justSelectedLocation = false;
-    private suppressNextLocationSearch = false;
 
     private readonly destroy$ = new Subject<void>();
-    private readonly germanCityAutocompleteService = inject(GermanCityAutocompleteService);
     private readonly userProfileService = inject(UserProfileService);
 
     private readonly DEFAULT_VALUES = {
-        location: DEFAULT_USER_PROFILE.location,
-        distance_miles: DEFAULT_USER_PROFILE.distance_miles,
-        hours_old: DEFAULT_USER_PROFILE.hours_old,
         allow_deutsch: DEFAULT_USER_PROFILE.allow_deutsch
     };
 
     constructor(private fb: FormBuilder) {
         this.form = this.createForm();
-        this.selectedLocationLabel = this.DEFAULT_VALUES.location;
     }
 
     ngOnInit(): void {
         this.loadProfiles();
-
-        this.form.get('location')?.valueChanges.pipe(
-            map((value: unknown) => String(value ?? '').trim()),
-            debounceTime(250),
-            distinctUntilChanged(),
-            tap((query: string) => {
-                if (this.suppressNextLocationSearch) {
-                    this.suppressNextLocationSearch = false;
-                    this.locationSuggestions = [];
-                    this.locationSuggestionsVisible = false;
-                    this.locationSearchLoading = false;
-                    this.highlightedLocationIndex = -1;
-                    return;
-                }
-
-                // clear selected flag when user types
-                if (!this.justSelectedLocation) {
-                    this.selectedLocationLabel = null;
-                }
-
-                this.justSelectedLocation = false;
-
-                if (query.length < 3) {
-                    this.locationSuggestions = [];
-                    this.locationSuggestionsVisible = false;
-                    this.locationSearchLoading = false;
-                    return;
-                }
-
-                this.locationSearchLoading = true;
-            }),
-            switchMap((query: string) => query.length >= 3
-                ? this.germanCityAutocompleteService.search(query)
-                : of([])
-            ),
-            takeUntil(this.destroy$)
-        ).subscribe((suggestions: GermanCitySuggestion[]) => {
-            this.locationSuggestions = suggestions;
-            this.locationSearchLoading = false;
-            this.locationSuggestionsVisible = suggestions.length > 0;
-            this.highlightedLocationIndex = suggestions.length > 0 ? 0 : -1;
-        });
     }
 
     ngOnDestroy(): void {
@@ -180,11 +120,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     private createForm(): FormGroup {
         return this.fb.group({
             search_terms: [[]],
-            sites: [[]],
             job_levels: [[]],
-            location: [this.DEFAULT_VALUES.location, Validators.required],
-            distance_miles: [this.DEFAULT_VALUES.distance_miles],
-            hours_old: [this.DEFAULT_VALUES.hours_old],
             allow_deutsch: [this.DEFAULT_VALUES.allow_deutsch],
             excluded_positions: [[]],
             excluded_companies: [[]]
@@ -196,11 +132,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
             search_terms: [],
             job_levels: [],
             excluded_companies: [],
-            sites: [...this.AVAILABLE_SITES],
             excluded_positions: [],
-            location: this.DEFAULT_VALUES.location,
-            distance_miles: this.DEFAULT_VALUES.distance_miles,
-            hours_old: this.DEFAULT_VALUES.hours_old,
             allow_deutsch: this.DEFAULT_VALUES.allow_deutsch
         };
     }
@@ -211,13 +143,20 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
             search_terms: [...(profile.search_terms ?? [])],
             job_levels: [...(profile.job_levels ?? [])],
             excluded_companies: [...(profile.excluded_companies ?? [])],
-            sites: [...(profile.sites ?? this.AVAILABLE_SITES)],
             excluded_positions: [...(profile.excluded_positions ?? [])],
-            location: String(profile.location ?? this.DEFAULT_VALUES.location).trim(),
-            distance_miles: Number(profile.distance_miles ?? this.DEFAULT_VALUES.distance_miles),
-            hours_old: Number(profile.hours_old ?? this.DEFAULT_VALUES.hours_old),
             allow_deutsch: Boolean(profile.allow_deutsch ?? this.DEFAULT_VALUES.allow_deutsch)
         };
+    }
+
+    private mergeUniqueValues(existing: string[], incoming: string[]): string[] {
+        const merged = [...existing];
+        for (const value of incoming) {
+            const trimmed = value.trim();
+            if (trimmed && !merged.includes(trimmed)) {
+                merged.push(trimmed);
+            }
+        }
+        return merged;
     }
 
     private setProfileMessage(message: string | null): void {
@@ -227,11 +166,6 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     private syncSearchTerms(): void {
         this.form.patchValue({ search_terms: Array.from(this.selectedSearchTerms) });
         this.showSearchTermsError = this.selectedSearchTerms.size === 0;
-    }
-
-    private syncSites(): void {
-        this.form.patchValue({ sites: Array.from(this.selectedSites) });
-        this.showSitesError = this.selectedSites.size === 0;
     }
 
     private syncJobLevels(): void {
@@ -250,27 +184,22 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     private syncSelectionsFromProfile(profile: UserProfile): void {
         this.selectedSearchTerms = new Set(profile.search_terms ?? []);
         this.selectedJobLevels = new Set(profile.job_levels ?? []);
-        this.selectedSites = new Set(profile.sites?.length ? profile.sites : this.AVAILABLE_SITES);
         this.selectedCompanyExclusions = new Set(profile.excluded_companies ?? []);
         this.selectedPositionExclusions = new Set(profile.excluded_positions ?? []);
-        this.selectedLocationLabel = profile.location || null;
         this.showSearchTermsError = false;
         this.showJobLevelsError = false;
-        this.showSitesError = false;
-        this.showLocationError = false;
     }
 
     private applyProfile(profile: UserProfile): void {
         const normalized = this.normalizeProfile(profile);
         this.selectedProfileId = normalized.profile_id ?? null;
+        this.searchTerms = this.mergeUniqueValues(this.searchTerms, normalized.search_terms);
+        this.companyExclusionTerms = this.mergeUniqueValues(this.companyExclusionTerms, normalized.excluded_companies);
+        this.positionExclusionTerms = this.mergeUniqueValues(this.positionExclusionTerms, normalized.excluded_positions);
         this.form.patchValue(
             {
                 search_terms: [...normalized.search_terms],
-                sites: [...normalized.sites],
                 job_levels: [...normalized.job_levels],
-                location: normalized.location,
-                distance_miles: normalized.distance_miles,
-                hours_old: normalized.hours_old,
                 allow_deutsch: normalized.allow_deutsch,
                 excluded_positions: [...normalized.excluded_positions],
                 excluded_companies: [...normalized.excluded_companies]
@@ -278,10 +207,10 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
             { emitEvent: false }
         );
         this.syncSelectionsFromProfile(normalized);
-        this.locationSuggestions = [];
-        this.locationSuggestionsVisible = false;
-        this.locationSearchLoading = false;
-        this.highlightedLocationIndex = -1;
+        this.syncSearchTerms();
+        this.syncJobLevels();
+        this.syncCompanyExclusions();
+        this.syncPositionExclusions();
         this.setProfileMessage(this.selectedProfileId ? `Editing profile ${this.selectedProfileId}.` : 'Editing a new profile.');
     }
 
@@ -292,11 +221,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
             search_terms: Array.from(this.selectedSearchTerms),
             job_levels: Array.from(this.selectedJobLevels),
             excluded_companies: Array.from(this.selectedCompanyExclusions),
-            sites: Array.from(this.selectedSites),
             excluded_positions: Array.from(this.selectedPositionExclusions),
-            location: String(rawValue.location ?? '').trim(),
-            distance_miles: Number(rawValue.distance_miles ?? this.DEFAULT_VALUES.distance_miles),
-            hours_old: Number(rawValue.hours_old ?? this.DEFAULT_VALUES.hours_old),
             allow_deutsch: Boolean(rawValue.allow_deutsch)
         };
     }
@@ -336,15 +261,30 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     }
 
     selectProfile(profileId: string): void {
-        if (!profileId) {
+        const normalizedProfileId = profileId.trim();
+
+        if (!normalizedProfileId) {
             this.createNewProfile();
             return;
         }
 
-        const selected = this.profiles.find(profile => profile.profile_id === profileId);
-        if (selected) {
-            this.applyProfile(selected);
-        }
+        this.isProfilesLoading = true;
+        this.userProfileService.getProfile(normalizedProfileId).subscribe({
+            next: (profile: UserProfile) => {
+                this.applyProfile(profile);
+                this.isProfilesLoading = false;
+            },
+            error: (err) => {
+                console.error('Profile select error:', err);
+                const fallback = this.profiles.find(profile => String(profile.profile_id ?? '').trim() === normalizedProfileId);
+                if (fallback) {
+                    this.applyProfile(fallback);
+                } else {
+                    this.setProfileMessage(err.error?.detail || 'Failed to load selected profile.');
+                }
+                this.isProfilesLoading = false;
+            }
+        });
     }
 
     createNewProfile(): void {
@@ -414,32 +354,6 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
                 this.isProfileSaving = false;
             }
         });
-    }
-
-    // ─── Sites ────────────────────────────────────────────────────────────────
-
-    toggleSite(site: string): void {
-        if (this.selectedSites.has(site)) {
-            this.selectedSites.delete(site);
-        } else {
-            this.selectedSites.add(site);
-        }
-
-        this.syncSites();
-    }
-
-    isSiteSelected(site: string): boolean {
-        return this.selectedSites.has(site);
-    }
-
-    selectAllSites(): void {
-        this.selectedSites = new Set(this.AVAILABLE_SITES);
-        this.syncSites();
-    }
-
-    deselectAllSites(): void {
-        this.selectedSites.clear();
-        this.syncSites();
     }
 
     // ─── Search Terms ──────────────────────────────────────────────────────────
@@ -674,57 +588,6 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
 
     // ─── Location Autocomplete ────────────────────────────────────────────────
 
-    onLocationFocus(): void {
-        this.locationSuggestionsVisible = this.locationSuggestions.length > 0;
-    }
-
-    onLocationBlur(): void {
-        setTimeout(() => {
-            // If the user didn't pick from the list, clear the field and mark as required
-            const current = String(this.form.get('location')?.value ?? '').trim();
-            if (!this.selectedLocationLabel || this.selectedLocationLabel !== current) {
-                this.form.patchValue({ location: '' });
-                this.form.get('location')?.setErrors({ required: true });
-                this.showLocationError = true;
-            }
-            this.locationSuggestionsVisible = false;
-        }, 150);
-    }
-
-    onLocationKeydown(event: KeyboardEvent): void {
-        if (event.key === 'ArrowDown') {
-            event.preventDefault();
-            if (this.locationSuggestions.length > 0) {
-                this.highlightedLocationIndex = (this.highlightedLocationIndex + 1) % this.locationSuggestions.length;
-            }
-        } else if (event.key === 'ArrowUp') {
-            event.preventDefault();
-            if (this.locationSuggestions.length > 0) {
-                this.highlightedLocationIndex = (this.highlightedLocationIndex - 1 + this.locationSuggestions.length) % this.locationSuggestions.length;
-            }
-        } else if (event.key === 'Enter') {
-            if (this.locationSuggestions.length > 0 && this.highlightedLocationIndex >= 0) {
-                event.preventDefault();
-                const suggestion = this.locationSuggestions[this.highlightedLocationIndex];
-                if (suggestion) this.selectLocationSuggestion(suggestion);
-            }
-        } else if (event.key === 'Escape') {
-            this.locationSuggestionsVisible = false;
-        }
-    }
-
-    selectLocationSuggestion(suggestion: GermanCitySuggestion): void {
-        this.justSelectedLocation = true;
-        this.suppressNextLocationSearch = true;
-        this.selectedLocationLabel = suggestion.label;
-        this.form.get('location')?.setValue(suggestion.label, { emitEvent: false });
-        this.locationSuggestions = [];
-        this.locationSuggestionsVisible = false;
-        this.locationSearchLoading = false;
-        this.highlightedLocationIndex = -1;
-        this.showLocationError = false;
-    }
-
     // ─── ALLOW_DEUTSCH Toggle ──────────────────────────────────────────────────
 
     toggleAllowDeutsch(): void {
@@ -747,7 +610,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     }
 
     isFormValid(): boolean {
-        return this.form.valid && this.isSearchTermsValid() && this.isJobLevelsValid() && this.selectedSites.size > 0;
+        return this.form.valid && this.isSearchTermsValid() && this.isJobLevelsValid();
     }
 
     // ─── Actions ───────────────────────────────────────────────────────────────
@@ -756,13 +619,6 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         // Trigger error messages on attempted scrape with invalid state
         this.showSearchTermsError = !this.isSearchTermsValid();
         this.showJobLevelsError = !this.isJobLevelsValid();
-        this.showSitesError = this.selectedSites.size === 0;
-        // Ensure location must be selected from suggestions
-        if (!this.selectedLocationLabel) {
-            this.showLocationError = true;
-            // mark control invalid
-            this.form.get('location')?.setErrors({ required: true });
-        }
 
         if (!this.isLoading && this.isFormValid()) {
             this.scrape.emit(this.buildActiveProfile());
@@ -771,7 +627,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
 
     exportCSV(): void {
         if (!this.jobs || this.jobs.length === 0) {
-            alert('No jobs to export.');
+            this.setProfileMessage('No stored jobs are available yet. Run a sync first.');
             return;
         }
 

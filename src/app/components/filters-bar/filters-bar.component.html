@@ -8,7 +8,7 @@
                         (change)="selectProfile($any($event.target).value)">
                         <option value="">New profile</option>
                         <option *ngFor="let profile of profiles" [value]="profile.profile_id || ''">
-                            {{ profile.profile_id || 'Profile' }} • {{ profile.location }}
+                            {{ profile.profile_id || 'Profile' }}
                         </option>
                     </select>
                     <button type="button" class="label-btn" (click)="createNewProfile()"
@@ -62,32 +62,6 @@
                 <!-- Error message -->
                 <span class="error-message" *ngIf="showSearchTermsError">
                     ⚠ Please select at least one search term.
-                </span>
-            </div>
-        </div>
-
-        <!-- Sites Row -->
-        <div class="filters-row-sites">
-            <div class="filter-group">
-                <div class="label-with-buttons">
-                    <label>Sites</label>
-                    <div class="label-buttons">
-                        <button type="button" class="label-btn" (click)="selectAllSites()" title="Select all">Select
-                            All</button>
-                        <button type="button" class="label-btn" (click)="deselectAllSites()"
-                            title="Deselect all">Deselect All</button>
-                    </div>
-                </div>
-                <div class="chips-wrapper">
-                    <div class="chips">
-                        <button *ngFor="let site of AVAILABLE_SITES" type="button" class="chip chip-selectable"
-                            [class.chip-selected]="isSiteSelected(site)" (click)="toggleSite(site)">
-                            <span class="chip-text">{{ site }}</span>
-                        </button>
-                    </div>
-                </div>
-                <span class="error-message" *ngIf="showSitesError">
-                    ⚠ Please select at least one site.
                 </span>
             </div>
         </div>
@@ -208,55 +182,8 @@
             </div>
         </div>
 
-        <!-- Bottom Row: Location and Other Filters -->
+        <!-- Bottom Row: Other Filters -->
         <div class="filters-row-bottom">
-            <div class="filter-group">
-                <label for="location">Location</label>
-                <div class="location-autocomplete">
-                    <input id="location" formControlName="location" type="text" class="text-input"
-                        placeholder="Search a city in Germany" autocomplete="off" (focus)="onLocationFocus()"
-                        (blur)="onLocationBlur()" (keydown)="onLocationKeydown($event)" />
-
-                    <div class="location-suggestions" *ngIf="locationSuggestionsVisible">
-                        <button type="button" class="location-suggestion"
-                            *ngFor="let suggestion of locationSuggestions; let i = index"
-                            [class.highlighted]="i === highlightedLocationIndex"
-                            (mouseenter)="highlightedLocationIndex = i"
-                            (mousedown)="selectLocationSuggestion(suggestion); $event.preventDefault()">
-                            <span class="location-suggestion-city">{{ suggestion.city }}</span>
-                            <span class="location-suggestion-country">Germany</span>
-                        </button>
-
-                        <div class="location-suggestion location-suggestion-status" *ngIf="locationSearchLoading">
-                            Searching German cities...
-                        </div>
-
-                        <div class="location-suggestion location-suggestion-status"
-                            *ngIf="!locationSearchLoading && locationSuggestions.length === 0 && (form.get('LOCATION')?.value?.trim()?.length ?? 0) >= 3">
-                            No German cities found.
-                        </div>
-                        <div class="error-message" *ngIf="showLocationError">
-                            ⚠ Please select a city from the list.
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <label for="distance">Distance (miles)</label>
-                <input id="distance" formControlName="distance_miles" type="number" class="number-input" />
-            </div>
-
-            <div class="filter-group">
-                <label for="hours">Hours Old</label>
-                <input id="hours" formControlName="hours_old" type="number" class="number-input" />
-            </div>
-
-            <div class="filter-group">
-                <label for="results">Results per search term</label>
-                <input id="results" formControlName="RESULTS_WANTED" type="number" class="number-input" />
-            </div>
-
             <div class="filter-group deutsch-group">
                 <label>Allow Deutsch</label>
                 <button type="button" class="toggle-deutsch" [class.toggle-enabled]="isAllowDeutschEnabled()"
@@ -269,7 +196,7 @@
         <!-- Action Buttons -->
         <div class="action-buttons">
             <button type="button" class="btn btn-primary" (click)="onScrape()" [disabled]="isLoading">
-                <span *ngIf="!isLoading">Scrape</span>
+                <span *ngIf="!isLoading">Get jobs</span>
                 <span *ngIf="isLoading" class="spinner">⏳</span>
             </button>
             <button type="button" class="btn btn-secondary" (click)="exportCSV()"

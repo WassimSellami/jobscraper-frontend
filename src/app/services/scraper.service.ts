@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Job } from '../models/job.model';
-import { UserProfile } from '../models/user-profile.model';
+import { UserProfilePayload } from '../models/user-profile.model';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -22,7 +22,7 @@ export class ScraperService {
 
     constructor(private http: HttpClient) { }
 
-    public scrape(profile: UserProfile): void {
+    public scrape(profile: UserProfilePayload): void {
         this.isLoadingSubject.next(true);
         this.errorSubject.next(null);
 
@@ -35,7 +35,7 @@ export class ScraperService {
                 },
                 error: (err) => {
                     console.error('Scrape error:', err);
-                    this.errorSubject.next(err.error?.detail || 'Failed to scrape jobs. Please check the backend.');
+                    this.errorSubject.next(err.error?.detail || 'Failed to load filtered jobs. Please check the backend.');
                     this.isLoadingSubject.next(false);
                     this.jobsSubject.next([]);
                 }
