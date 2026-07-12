@@ -101,7 +101,8 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     private readonly userProfileService = inject(UserProfileService);
 
     private readonly DEFAULT_VALUES = {
-        allow_deutsch: DEFAULT_USER_PROFILE.allow_deutsch
+        allow_deutsch: DEFAULT_USER_PROFILE.allow_deutsch,
+        last_hours: DEFAULT_USER_PROFILE.last_hours
     };
 
     constructor(private fb: FormBuilder) {
@@ -122,6 +123,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
             search_terms: [[]],
             job_levels: [[]],
             allow_deutsch: [this.DEFAULT_VALUES.allow_deutsch],
+            last_hours: [this.DEFAULT_VALUES.last_hours, [Validators.required, Validators.min(1), Validators.pattern(/^\d+$/)]],
             excluded_positions: [[]],
             excluded_companies: [[]]
         });
@@ -133,7 +135,8 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
             job_levels: [],
             excluded_companies: [],
             excluded_positions: [],
-            allow_deutsch: this.DEFAULT_VALUES.allow_deutsch
+            allow_deutsch: this.DEFAULT_VALUES.allow_deutsch,
+            last_hours: this.DEFAULT_VALUES.last_hours
         };
     }
 
@@ -144,7 +147,8 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
             job_levels: [...(profile.job_levels ?? [])],
             excluded_companies: [...(profile.excluded_companies ?? [])],
             excluded_positions: [...(profile.excluded_positions ?? [])],
-            allow_deutsch: Boolean(profile.allow_deutsch ?? this.DEFAULT_VALUES.allow_deutsch)
+            allow_deutsch: Boolean(profile.allow_deutsch ?? this.DEFAULT_VALUES.allow_deutsch),
+            last_hours: Number(profile.last_hours ?? this.DEFAULT_VALUES.last_hours)
         };
     }
 
@@ -201,6 +205,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
                 search_terms: [...normalized.search_terms],
                 job_levels: [...normalized.job_levels],
                 allow_deutsch: normalized.allow_deutsch,
+                last_hours: normalized.last_hours,
                 excluded_positions: [...normalized.excluded_positions],
                 excluded_companies: [...normalized.excluded_companies]
             },
@@ -222,7 +227,8 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
             job_levels: Array.from(this.selectedJobLevels),
             excluded_companies: Array.from(this.selectedCompanyExclusions),
             excluded_positions: Array.from(this.selectedPositionExclusions),
-            allow_deutsch: Boolean(rawValue.allow_deutsch)
+            allow_deutsch: Boolean(rawValue.allow_deutsch),
+            last_hours: Number(rawValue.last_hours)
         };
     }
 

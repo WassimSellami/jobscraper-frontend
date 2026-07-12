@@ -184,6 +184,14 @@
 
         <!-- Bottom Row: Other Filters -->
         <div class="filters-row-bottom">
+            <div class="filter-group">
+                <label for="last-hours">Last Hours</label>
+                <input id="last-hours" type="number" class="number-input" formControlName="last_hours" min="1"
+                    step="1" />
+                <span class="error-message" *ngIf="form.get('last_hours')?.invalid && form.get('last_hours')?.touched">
+                    Please enter a whole number of at least 1.
+                </span>
+            </div>
             <div class="filter-group deutsch-group">
                 <label>Allow Deutsch</label>
                 <button type="button" class="toggle-deutsch" [class.toggle-enabled]="isAllowDeutschEnabled()"

@@ -5,6 +5,7 @@ export interface UserProfile {
     excluded_companies: string[];
     excluded_positions: string[];
     allow_deutsch: boolean;
+    last_hours: number;
 }
 
 export type StoredUserProfile = UserProfile;
@@ -16,5 +17,6 @@ export const DEFAULT_USER_PROFILE: UserProfilePayload = {
     job_levels: [],
     excluded_companies: [],
     excluded_positions: [],
-    allow_deutsch: false
+    allow_deutsch: false,
+    last_hours: 24
 };
