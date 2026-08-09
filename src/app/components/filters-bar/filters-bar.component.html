@@ -21,10 +21,6 @@
                         [disabled]="isLoading || isProfilesLoading || isProfileSaving">
                         Edit Name
                     </button>
-                    <button type="button" class="label-btn danger-btn" (click)="deleteProfile()"
-                        [disabled]="isLoading || isProfilesLoading || isProfileSaving || !selectedProfileId">
-                        Delete
-                    </button>
                 </div>
                 <div class="profile-name-editor" *ngIf="isEditingProfileName">
                     <input id="profile-name" type="text" [(ngModel)]="profileName"

@@ -361,39 +361,6 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         });
     }
 
-    deleteProfile(): void {
-        if (!this.selectedProfileId) {
-            return;
-        }
-
-        const profileId = this.selectedProfileId;
-        if (!confirm('Delete this profile?')) {
-            return;
-        }
-
-        this.isProfileSaving = true;
-        this.userProfileService.deleteProfile(profileId).subscribe({
-            next: () => {
-                this.profiles = this.profiles.filter(profile => profile.profile_id !== profileId);
-                const nextProfile = this.profiles[0];
-
-                if (nextProfile) {
-                    this.applyProfile(nextProfile);
-                } else {
-                    this.applyProfile(this.createBlankProfile());
-                }
-
-                this.setProfileMessage('Profile deleted.');
-                this.isProfileSaving = false;
-            },
-            error: (err) => {
-                console.error('Profile delete error:', err);
-                this.setProfileMessage(err.error?.detail || 'Failed to delete profile.');
-                this.isProfileSaving = false;
-            }
-        });
-    }
-
     // ─── Search Terms ──────────────────────────────────────────────────────────
 
     addSearchTerm(): void {

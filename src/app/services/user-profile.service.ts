@@ -29,7 +29,4 @@ export class UserProfileService {
         return this.http.put<StoredUserProfile>(`${this.API_BASE_URL}${this.USER_PROFILES_ENDPOINT}/${profileId}`, profile);
     }
 
-    public deleteProfile(profileId: string): Observable<{ detail?: string; message?: string }> {
-        return this.http.delete<{ detail?: string; message?: string }>(`${this.API_BASE_URL}${this.USER_PROFILES_ENDPOINT}/${profileId}`);
-    }
 }
