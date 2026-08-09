@@ -4,28 +4,44 @@
             <div class="filter-group profile-select-group">
                 <label for="profile-select">Active Profile</label>
                 <div class="profile-controls">
-                    <select id="profile-select" class="profile-select" [value]="selectedProfileId || ''"
-                        (change)="selectProfile($any($event.target).value)">
-                        <option value="">New profile</option>
-                        <option *ngFor="let profile of profiles" [value]="profile.profile_id || ''">
-                            {{ profile.profile_id || 'Profile' }}
+                    <select id="profile-select" class="profile-select" [ngModel]="selectedProfileId"
+                        [ngModelOptions]="{standalone: true}" (ngModelChange)="selectProfile($event)">
+                        <option [ngValue]="null" hidden></option>
+                        <option *ngFor="let profile of profiles" [ngValue]="profile.profile_id">
+                            {{ profile.profile_name || profile.profile_id || 'Profile' }}
                         </option>
                     </select>
                     <button type="button" class="label-btn" (click)="createNewProfile()"
                         [disabled]="isProfilesLoading || isProfileSaving">New</button>
                     <button type="button" class="label-btn" (click)="saveProfile()"
                         [disabled]="isLoading || isProfilesLoading || isProfileSaving">
-                        {{ isProfileSaving ? 'Saving...' : 'Save' }}
+                        {{ isProfileSaving ? (selectedProfileId ? 'Saving...' : 'Creating...') : (selectedProfileId ? 'Save Profile' : 'Create Profile') }}
+                    </button>
+                    <button type="button" class="label-btn" (click)="editProfileName()"
+                        [disabled]="isLoading || isProfilesLoading || isProfileSaving">
+                        Edit Name
                     </button>
                     <button type="button" class="label-btn danger-btn" (click)="deleteProfile()"
                         [disabled]="isLoading || isProfilesLoading || isProfileSaving || !selectedProfileId">
                         Delete
                     </button>
                 </div>
+                <div class="profile-name-editor" *ngIf="isEditingProfileName">
+                    <input id="profile-name" type="text" [(ngModel)]="profileName"
+                        [ngModelOptions]="{standalone: true}" placeholder="Profile name" maxlength="100"
+                        aria-label="Profile name">
+                    <button type="button" class="label-btn" (click)="saveProfile()"
+                        [disabled]="isLoading || isProfilesLoading || isProfileSaving">
+                        {{ isProfileSaving ? (selectedProfileId ? 'Saving...' : 'Creating...') : (selectedProfileId ? 'Save Profile' : 'Create Profile') }}
+                    </button>
+                    <button type="button" class="label-btn" (click)="cancelProfileNameEdit()"
+                        [disabled]="isProfileSaving">Cancel</button>
+                </div>
                 <span class="profile-status" *ngIf="profileStatusMessage">{{ profileStatusMessage }}</span>
             </div>
         </div>
 
+        <ng-container *ngIf="selectedProfileId || isCreatingProfile; else profileSelectionRequired">
         <!-- Search Terms Row -->
         <div class="filters-row-search">
             <div class="filter-group">
@@ -212,6 +228,13 @@
                 Export CSV
             </button>
         </div>
+        </ng-container>
+
+        <ng-template #profileSelectionRequired>
+            <p class="profile-selection-prompt" *ngIf="!isProfilesLoading">
+                Select a profile to configure filters, or create a new one.
+            </p>
+        </ng-template>
 
     </form>
 </div>

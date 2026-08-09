@@ -15,6 +15,47 @@
     align-items: center;
 }
 
+.profile-toolbar {
+    width: 100%;
+}
+
+.profile-select-group {
+    width: 100%;
+}
+
+.profile-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.profile-select {
+    min-width: 12rem;
+    height: 2rem;
+    padding: 0 0.6rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    font: inherit;
+}
+
+.profile-controls .label-btn {
+    min-height: 2rem;
+    padding: 0.4rem 0.8rem;
+}
+
+.profile-selection-prompt {
+    width: 100%;
+    margin: 0;
+    padding: 1rem;
+    border: 1px dashed var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
 .filters-row-top,
 .filters-row-bottom,
 .filters-row-search,
@@ -92,6 +133,21 @@
     &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+    }
+}
+
+.profile-name-editor {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    input {
+        min-width: 180px;
+        padding: 0.4rem 0.6rem;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        background: var(--filter-bg);
+        color: var(--text-primary);
     }
 }
 

@@ -1,5 +1,6 @@
 export interface UserProfile {
     profile_id?: string;
+    profile_name?: string;
     search_terms: string[];
     job_levels: string[];
     excluded_companies: string[];

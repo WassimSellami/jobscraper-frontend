@@ -3,9 +3,9 @@
     "version": "1.0.0",
     "scripts": {
         "ng": "ng",
-        "start": "ng serve",
+        "start": "node scripts/set-env.js && ng serve",
         "build": "ng build",
-        "build:prod": "node scripts/set-env.js && ng build --configuration production",
+        "build:prod": "node scripts/set-env.js --production && ng build --configuration production",
         "watch": "ng build --watch --configuration development",
         "serve:static": "npx serve -s dist/jobscraper-dashboard",
         "test": "ng test"

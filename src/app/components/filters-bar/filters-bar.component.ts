@@ -17,10 +17,13 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     @Input() isLoading = false;
     @Input() jobs: any[] = [];
 
-    readonly ALLOWED_JOB_LEVELS = ['entry level', 'mid-senior level'];
+    readonly ALLOWED_JOB_LEVELS = ['entry level', 'mid-senior level', 'internship'];
 
     profiles: UserProfile[] = [];
     selectedProfileId: string | null = null;
+    profileName = '';
+    isEditingProfileName = false;
+    isCreatingProfile = false;
     profileStatusMessage: string | null = null;
     isProfilesLoading = false;
     isProfileSaving = false;
@@ -131,6 +134,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
 
     private createBlankProfile(): UserProfile {
         return {
+            profile_name: '',
             search_terms: [],
             job_levels: [],
             excluded_companies: [],
@@ -143,6 +147,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     private normalizeProfile(profile: Partial<UserProfile>): UserProfile {
         return {
             profile_id: profile.profile_id,
+            profile_name: profile.profile_name?.trim() ?? '',
             search_terms: [...(profile.search_terms ?? [])],
             job_levels: [...(profile.job_levels ?? [])],
             excluded_companies: [...(profile.excluded_companies ?? [])],
@@ -197,6 +202,9 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
     private applyProfile(profile: UserProfile): void {
         const normalized = this.normalizeProfile(profile);
         this.selectedProfileId = normalized.profile_id ?? null;
+        this.profileName = normalized.profile_name ?? '';
+        this.isEditingProfileName = false;
+        this.isCreatingProfile = false;
         this.searchTerms = [...normalized.search_terms];
         this.companyExclusionTerms = this.mergeUniqueValues(this.companyExclusionTerms, normalized.excluded_companies);
         this.positionExclusionTerms = this.mergeUniqueValues(this.positionExclusionTerms, normalized.excluded_positions);
@@ -216,13 +224,14 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         this.syncJobLevels();
         this.syncCompanyExclusions();
         this.syncPositionExclusions();
-        this.setProfileMessage(this.selectedProfileId ? `Editing profile ${this.selectedProfileId}.` : 'Editing a new profile.');
+        this.setProfileMessage(null);
     }
 
     private buildProfilePayload(): UserProfilePayload {
         const rawValue = this.form.getRawValue();
 
         return {
+            profile_name: this.profileName.trim(),
             search_terms: Array.from(this.selectedSearchTerms),
             job_levels: Array.from(this.selectedJobLevels),
             excluded_companies: Array.from(this.selectedCompanyExclusions),
@@ -239,14 +248,14 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         };
     }
 
-    private loadProfiles(selectProfileId?: string | null): void {
+    private loadProfiles(selectProfileId?: string | null, successMessage?: string): void {
         this.isProfilesLoading = true;
         this.userProfileService.getProfiles().subscribe({
             next: (profiles: UserProfile[]) => {
                 this.profiles = profiles;
                 const profileToSelect = selectProfileId
                     ? profiles.find(profile => profile.profile_id === selectProfileId)
-                    : profiles[0];
+                    : undefined;
 
                 if (profileToSelect) {
                     this.applyProfile(profileToSelect);
@@ -255,6 +264,7 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
                 }
 
                 this.isProfilesLoading = false;
+                this.setProfileMessage(successMessage ?? null);
             },
             error: (err) => {
                 console.error('Profile load error:', err);
@@ -266,11 +276,12 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
         });
     }
 
-    selectProfile(profileId: string): void {
-        const normalizedProfileId = profileId.trim();
+    selectProfile(profileId: string | null): void {
+        const normalizedProfileId = profileId?.trim() ?? '';
 
         if (!normalizedProfileId) {
-            this.createNewProfile();
+            this.applyProfile(this.createBlankProfile());
+            this.setProfileMessage('Select a profile or create a new one.');
             return;
         }
 
@@ -295,10 +306,32 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
 
     createNewProfile(): void {
         this.applyProfile(this.createBlankProfile());
-        this.setProfileMessage('Editing a new profile.');
+        this.searchTerms = this.mergeUniqueValues(
+            [],
+            this.profiles.flatMap(profile => profile.search_terms ?? [])
+        );
+        this.isCreatingProfile = true;
+        this.isEditingProfileName = true;
+        this.setProfileMessage('Enter a name for the new profile.');
+    }
+
+    editProfileName(): void {
+        this.isEditingProfileName = true;
+    }
+
+    cancelProfileNameEdit(): void {
+        const activeProfile = this.profiles.find(profile => profile.profile_id === this.selectedProfileId);
+        this.profileName = activeProfile?.profile_name ?? '';
+        this.isEditingProfileName = false;
     }
 
     saveProfile(): void {
+        if (!this.profileName.trim()) {
+            this.isEditingProfileName = true;
+            this.setProfileMessage('Enter a profile name before saving.');
+            return;
+        }
+
         if (!this.isFormValid()) {
             this.setProfileMessage('Fix the form before saving this profile.');
             return;
@@ -314,12 +347,11 @@ export class FiltersBarComponent implements OnInit, OnDestroy {
 
         request.subscribe({
             next: (savedProfile: UserProfile) => {
-                this.profiles = existingProfileId
-                    ? this.profiles.map(profile => profile.profile_id === savedProfile.profile_id ? savedProfile : profile)
-                    : [...this.profiles, savedProfile];
-                this.applyProfile(savedProfile);
-                this.setProfileMessage(existingProfileId ? 'Profile updated.' : 'Profile created.');
                 this.isProfileSaving = false;
+                this.loadProfiles(
+                    savedProfile.profile_id,
+                    existingProfileId ? 'Profile updated.' : 'Profile created.'
+                );
             },
             error: (err) => {
                 console.error('Profile save error:', err);
